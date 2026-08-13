@@ -135,12 +135,25 @@ export function formatPrice(
   return `${prices.currency_prefix}${grouped}${fraction}${prices.currency_suffix}`;
 }
 
+/* The WP host intermittently answers API calls with an HTML error page
+   (observed live, 2026-08-13) — validate the content type and retry once so a
+   transient blip doesn't become a visitor-facing 500 on an ISR cache miss. */
 async function storeApiFetch(url: string): Promise<Response> {
-  const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
-  if (!res.ok) {
-    throw new Error(`Store API ${res.status} for ${url}`);
+  let lastError: unknown;
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const res = await fetch(url, { next: { revalidate: REVALIDATE_SECONDS } });
+      if (!res.ok) throw new Error(`Store API ${res.status} for ${url}`);
+      const contentType = res.headers.get("content-type") ?? "";
+      if (!contentType.includes("json")) {
+        throw new Error(`Store API returned ${contentType || "no content type"} for ${url}`);
+      }
+      return res;
+    } catch (error) {
+      lastError = error;
+    }
   }
-  return res;
+  throw lastError;
 }
 
 export interface ProductsPage {
@@ -160,12 +173,13 @@ export async function getProducts(query: ProductsQuery = {}): Promise<ProductsPa
 }
 
 export async function getProductById(id: number): Promise<StoreApiProduct | null> {
-  const res = await fetch(`${STORE_API_BASE}/products/${id}`, {
-    next: { revalidate: REVALIDATE_SECONDS },
-  });
-  if (res.status === 404) return null;
-  if (!res.ok) throw new Error(`Store API ${res.status} for product ${id}`);
-  return (await res.json()) as StoreApiProduct;
+  try {
+    const res = await storeApiFetch(`${STORE_API_BASE}/products/${id}`);
+    return (await res.json()) as StoreApiProduct;
+  } catch (error) {
+    if (error instanceof Error && error.message.includes("Store API 404")) return null;
+    throw error;
+  }
 }
 
 export async function getProductBySlug(slug: string): Promise<StoreApiProduct | null> {
