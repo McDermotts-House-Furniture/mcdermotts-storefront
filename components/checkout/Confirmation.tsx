@@ -1,30 +1,47 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect, useSyncExternalStore } from "react";
 import { Button } from "@/components/core/Button";
 import { EyebrowLabel } from "@/components/core/EyebrowLabel";
 import { ORDER_SNAPSHOT_KEY, type OrderSnapshot } from "@/components/checkout/CheckoutForm";
 import { formatEuro, lineTotalMinorUnits } from "@/lib/money";
 
+/* The order snapshot is written once by the checkout form; sessionStorage never
+   changes underneath this page, so subscribe is a no-op and the parse is cached
+   to keep the snapshot referentially stable. */
+const subscribe = () => () => {};
+let cachedRaw: string | null = null;
+let cachedOrder: OrderSnapshot | null = null;
+
+function readOrder(): OrderSnapshot | null {
+  let raw: string | null = null;
+  try {
+    raw = window.sessionStorage.getItem(ORDER_SNAPSHOT_KEY);
+  } catch {
+    return null;
+  }
+  if (raw !== cachedRaw) {
+    cachedRaw = raw;
+    try {
+      cachedOrder = raw ? (JSON.parse(raw) as OrderSnapshot) : null;
+    } catch {
+      cachedOrder = null;
+    }
+  }
+  return cachedOrder;
+}
+
 export function Confirmation() {
   const router = useRouter();
-  const [order, setOrder] = useState<OrderSnapshot | null>(null);
-  const [checked, setChecked] = useState(false);
+  const order = useSyncExternalStore(subscribe, readOrder, () => null);
 
+  /* Arriving here without an order (deep link, refresh after the session
+     ended) goes home. Guarded on the client only — the server snapshot is
+     always null. */
   useEffect(() => {
-    try {
-      const raw = window.sessionStorage.getItem(ORDER_SNAPSHOT_KEY);
-      if (raw) setOrder(JSON.parse(raw) as OrderSnapshot);
-    } catch {
-      /* fall through to the redirect below */
-    }
-    setChecked(true);
-  }, []);
-
-  useEffect(() => {
-    if (checked && !order) router.replace("/");
-  }, [checked, order, router]);
+    if (readOrder() === null) router.replace("/");
+  }, [router]);
 
   if (!order) return null;
 

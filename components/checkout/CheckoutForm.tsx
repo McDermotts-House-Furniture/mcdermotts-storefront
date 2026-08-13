@@ -44,6 +44,15 @@ const fieldControl =
 const fieldLabel =
   "text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-eyebrow text-ink-soft";
 
+function FieldError({ message }: { message?: string }) {
+  if (!message) return null;
+  return (
+    <p role="alert" className="mt-1 text-[length:var(--fs-small)] font-bold text-gold-deep">
+      {message}
+    </p>
+  );
+}
+
 function SectionTitle({ children }: { children: string }) {
   return (
     <h2 className="border-t-4 border-gold pt-4 text-[length:var(--fs-h4)] font-bold uppercase tracking-heading">
@@ -106,15 +115,6 @@ export function CheckoutForm() {
     router.push("/checkout/confirmation");
   }
 
-  function FieldError({ field }: { field: FieldName }) {
-    if (!errors[field]) return null;
-    return (
-      <p role="alert" className="mt-1 text-[length:var(--fs-small)] font-bold text-gold-deep">
-        {errors[field]}
-      </p>
-    );
-  }
-
   return (
     <div className="grid items-start gap-[var(--grid-gap)] lg:grid-cols-[1fr_360px] lg:gap-12">
       <form onSubmit={handleSubmit} noValidate className="grid gap-10">
@@ -122,16 +122,16 @@ export function CheckoutForm() {
           <SectionTitle>Contact</SectionTitle>
           <div>
             <Input label="Full name" name="fullName" autoComplete="name" required />
-            <FieldError field="fullName" />
+            <FieldError message={errors.fullName} />
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <div>
               <Input label="Email" name="email" type="email" autoComplete="email" required />
-              <FieldError field="email" />
+              <FieldError message={errors.email} />
             </div>
             <div>
               <Input label="Phone" name="phone" type="tel" autoComplete="tel" required />
-              <FieldError field="phone" />
+              <FieldError message={errors.phone} />
             </div>
           </div>
         </section>
@@ -140,13 +140,13 @@ export function CheckoutForm() {
           <SectionTitle>Delivery address</SectionTitle>
           <div>
             <Input label="Address" name="address1" autoComplete="address-line1" required />
-            <FieldError field="address1" />
+            <FieldError message={errors.address1} />
           </div>
           <Input label="Address line 2" name="address2" autoComplete="address-line2" />
           <div className="grid gap-4 sm:grid-cols-3">
             <div>
               <Input label="Town or city" name="town" autoComplete="address-level2" required />
-              <FieldError field="town" />
+              <FieldError message={errors.town} />
             </div>
             <div>
               <label className="grid gap-1">
@@ -162,7 +162,7 @@ export function CheckoutForm() {
                   ))}
                 </select>
               </label>
-              <FieldError field="county" />
+              <FieldError message={errors.county} />
             </div>
             <Input label="Eircode" name="eircode" autoComplete="postal-code" />
           </div>

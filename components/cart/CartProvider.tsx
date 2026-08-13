@@ -10,7 +10,6 @@ import {
   useEffect,
   useMemo,
   useReducer,
-  useState,
   type ReactNode,
 } from "react";
 import {
@@ -18,6 +17,7 @@ import {
   emptyCart,
   itemCount,
   subtotalMinorUnits,
+  type CartAction,
   type CartItem,
   type CartState,
 } from "@/lib/cart";
@@ -50,16 +50,30 @@ function readStoredCart(): CartState {
   }
 }
 
-export function CartProvider({ children }: { children: ReactNode }) {
-  const [state, dispatch] = useReducer(cartReducer, emptyCart);
-  const [hydrated, setHydrated] = useState(false);
+interface ProviderState {
+  cart: CartState;
+  hydrated: boolean;
+}
 
+type ProviderAction = { type: "hydrate"; cart: CartState } | CartAction;
+
+function providerReducer(state: ProviderState, action: ProviderAction): ProviderState {
+  if (action.type === "hydrate") {
+    return { cart: action.cart, hydrated: true };
+  }
+  return { ...state, cart: cartReducer(state.cart, action) };
+}
+
+export function CartProvider({ children }: { children: ReactNode }) {
+  const [{ cart: state, hydrated }, dispatch] = useReducer(providerReducer, {
+    cart: emptyCart,
+    hydrated: false,
+  });
+
+  /* Server render and first client render agree on an empty cart; the stored
+     cart arrives in one dispatch after mount. */
   useEffect(() => {
-    const stored = readStoredCart();
-    for (const item of stored.items) {
-      dispatch({ type: "add", item });
-    }
-    setHydrated(true);
+    dispatch({ type: "hydrate", cart: readStoredCart() });
   }, []);
 
   useEffect(() => {
