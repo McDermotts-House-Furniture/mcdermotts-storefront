@@ -19,6 +19,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { getAcfProductFields } from "@/lib/acf";
+import { getDefaultAttributes } from "@/lib/wc-admin";
 import { homepage } from "@/lib/homepage-data";
 import { deliveryNoticesFor, rangeLinksFor } from "@/lib/merchandising";
 import { sanitizeProductHtml } from "@/lib/sanitize";
@@ -95,6 +96,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   /* ACF (theme fields) wins; falls back to Woo's native dimension fields. */
   const acf = await getAcfProductFields(slug);
   const dimensions = acf?.dimensions.length ? acf.dimensions : dimensionItems(product);
+  const defaultSelection = isVariable ? await getDefaultAttributes(product.id) : null;
 
   const related = primaryCategory
     ? (await getProducts({ category: primaryCategory.id, perPage: 5 })).products
@@ -146,6 +148,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
       on the day.
     </p>
   );
+
+  /* Shared by both branches — variable products have dimensions too. */
+  const dimensionsNode =
+    dimensions.length > 0 || acf?.specSheetUrl ? (
+      <div className="mt-8">
+        {dimensions.length > 0 && <DimensionSet items={dimensions} />}
+        {acf?.specSheetUrl && (
+          <div className="mt-3">
+            <TextLink href={acf.specSheetUrl}>See more sizes (PDF)</TextLink>
+          </div>
+        )}
+      </div>
+    ) : null;
 
   /* Delivery notices stack in theme-rule order (tag-driven, lib/merchandising). */
   const deliveryStack = (
@@ -229,8 +244,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             }))}
             variations={product.variations}
             basePrice={{ current: price.current, isRange: price.isRange }}
+            initialSelection={defaultSelection ?? undefined}
             infoHeader={infoHeader}
             shortDescription={shortDescription}
+            dimensions={dimensionsNode}
             deliveryNotices={deliveryStack}
             footNote={footNote}
             detailExtras={detailExtras}
@@ -240,16 +257,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {infoHeader}
             <Price className="mt-5" current={price.current} old={price.old} from={price.isRange} />
             {shortDescription}
-            {(dimensions.length > 0 || acf?.specSheetUrl) && (
-              <div className="mt-8">
-                {dimensions.length > 0 && <DimensionSet items={dimensions} />}
-                {acf?.specSheetUrl && (
-                  <div className="mt-3">
-                    <TextLink href={acf.specSheetUrl}>See more sizes (PDF)</TextLink>
-                  </div>
-                )}
-              </div>
-            )}
+            {dimensionsNode}
             {deliveryStack}
             <div className="mt-8">
               <BuyControls

@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, type ReactNode } from "react";
+import Image from "next/image";
+import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { BuyControls } from "@/components/commerce/BuyControls";
 import { Price } from "@/components/commerce/Price";
 import { ProductGallery, type GalleryImage } from "@/components/commerce/ProductGallery";
@@ -27,13 +28,31 @@ interface VariablePurchaseProps {
   variations: VariationRef[];
   /** Server-formatted fallback price shown before a selection resolves. */
   basePrice: { current: string; isRange: boolean };
+  /** Woo's default_attributes — preselects the form like the live site. */
+  initialSelection?: Selection;
   /** Server-rendered nodes (brand eyebrow, H1, rating / short description / crews line / range + accordions). */
   infoHeader: ReactNode;
   shortDescription?: ReactNode;
+  /** DimensionSet + spec-sheet link, rendered after the description (kit order). */
+  dimensions?: ReactNode;
   /** Tag-driven DeliveryNotice stack (lib/merchandising), rendered above the buy controls. */
   deliveryNotices?: ReactNode;
   footNote?: ReactNode;
   detailExtras?: ReactNode;
+}
+
+/* First variation that pins this attribute to this term — its image stands in
+   as the term's swatch. */
+function candidateVariationId(
+  variations: VariationRef[],
+  attribute: string,
+  termSlug: string,
+): number | null {
+  return (
+    variations.find((v) =>
+      v.attributes.some((a) => a.name === attribute && a.value === termSlug),
+    )?.id ?? null
+  );
 }
 
 export function VariablePurchase({
@@ -44,43 +63,82 @@ export function VariablePurchase({
   attributes,
   variations,
   basePrice,
+  initialSelection,
   infoHeader,
   shortDescription,
+  dimensions,
   deliveryNotices,
   footNote,
   detailExtras,
 }: VariablePurchaseProps) {
-  const [selection, setSelection] = useState<Selection>({});
-  /* Last fetch result, keyed by the variation it was for. The displayed
-     variation derives from this — a stale key simply reads as "not loaded",
-     so the effect never has to reset state synchronously. */
-  const [fetched, setFetched] = useState<{
-    forId: number;
-    data: VariationPayload | null;
-  } | null>(null);
+  const [selection, setSelection] = useState<Selection>(() => initialSelection ?? {});
+  /* One cache for every variation payload — swatch candidates and the resolved
+     selection share it. Missing key = not loaded; null = fetch failed. */
+  const [payloads, setPayloads] = useState<Record<number, VariationPayload | null>>({});
 
   const complete = isCompleteSelection(selection, attributes.map((a) => ({ ...a, has_variations: true })));
   const resolvedId = complete ? matchVariation(selection, variations) : null;
 
-  /* One small fetch per resolved combination — never the whole variation set
-     (Orla Kiely sofas run to 240 variations). Cached upstream for an hour. */
-  useEffect(() => {
-    if (resolvedId === null) return;
-    const controller = new AbortController();
-    fetch(`/api/variation/${resolvedId}`, { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data: VariationPayload | null) => {
-        if (!controller.signal.aborted) setFetched({ forId: resolvedId, data });
-      })
-      .catch(() => {
-        if (!controller.signal.aborted) setFetched({ forId: resolvedId, data: null });
-      });
-    return () => controller.abort();
-  }, [resolvedId]);
+  /* Term → candidate variation id per attribute (from the parent's map — free). */
+  const swatchCandidates = useMemo(() => {
+    const perAttribute = new Map<string, Map<string, number>>();
+    for (const attr of attributes) {
+      const termMap = new Map<string, number>();
+      for (const term of attr.terms) {
+        const id = candidateVariationId(variations, attr.name, term.slug);
+        if (id !== null) termMap.set(term.slug, id);
+      }
+      perAttribute.set(attr.name, termMap);
+    }
+    return perAttribute;
+  }, [attributes, variations]);
 
-  const variation = fetched?.forId === resolvedId ? fetched.data : null;
-  const loading = resolvedId !== null && fetched?.forId !== resolvedId;
-  const failed = fetched?.forId === resolvedId && fetched?.data === null;
+  /* Fetch whatever ids we need but don't have: swatch candidates once on mount,
+     plus the currently resolved selection. O(terms + 1), never O(variations);
+     every response is served from the route handler's 1h cache. */
+  useEffect(() => {
+    const wanted = new Set<number>();
+    for (const termMap of swatchCandidates.values()) {
+      for (const id of termMap.values()) wanted.add(id);
+    }
+    if (resolvedId !== null) wanted.add(resolvedId);
+    const missing = [...wanted].filter((id) => !(id in payloads));
+    if (missing.length === 0) return;
+
+    const controller = new AbortController();
+    for (const id of missing) {
+      fetch(`/api/variation/${id}`, { signal: controller.signal })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data: VariationPayload | null) => {
+          if (!controller.signal.aborted) setPayloads((p) => ({ ...p, [id]: data }));
+        })
+        .catch(() => {
+          if (!controller.signal.aborted) setPayloads((p) => ({ ...p, [id]: null }));
+        });
+    }
+    return () => controller.abort();
+  }, [swatchCandidates, resolvedId, payloads]);
+
+  const variation = resolvedId !== null ? (payloads[resolvedId] ?? null) : null;
+  const loading = resolvedId !== null && !(resolvedId in payloads);
+  const failed = resolvedId !== null && resolvedId in payloads && payloads[resolvedId] === null;
+
+  /* An attribute earns image swatches only when every term resolved an image
+     and the images actually differ — a shared photo means the attribute isn't
+     visual (foot options on a sofa) and gets text chips instead. */
+  function swatchImages(attr: PurchaseAttribute): Map<string, string> | null {
+    const termMap = swatchCandidates.get(attr.name);
+    if (!termMap || termMap.size < attr.terms.length) return null;
+    const images = new Map<string, string>();
+    for (const term of attr.terms) {
+      const id = termMap.get(term.slug);
+      if (id === undefined || !(id in payloads)) return null; // still loading
+      const thumb = payloads[id]?.image?.thumb || payloads[id]?.image?.src;
+      if (!thumb) return null;
+      images.set(term.slug, thumb);
+    }
+    return new Set(images.values()).size > 1 ? images : null;
+  }
 
   const variantLabel = attributes
     .map((a) => a.terms.find((t) => t.slug === selection[a.name])?.name)
@@ -100,6 +158,9 @@ export function VariablePurchase({
   const galleryImages = variation?.image
     ? [{ src: variation.image.src, alt: variation.image.alt || name, thumb: variation.image.thumb }, ...images]
     : images;
+
+  const chipBase =
+    "flex min-h-[var(--tap-min)] cursor-pointer items-center justify-center rounded-sm border bg-white transition-colors duration-[var(--dur-base)]";
 
   return (
     <ProductStage
@@ -125,29 +186,54 @@ export function VariablePurchase({
       </p>
 
       {shortDescription}
+      {dimensions}
 
-      <div className="mt-8 grid max-w-md gap-4">
-        {attributes.map((attr) => (
-          <label key={attr.name} className="grid gap-1">
-            <span className="text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-eyebrow text-ink-soft">
-              {attr.name}
-            </span>
-            <select
-              value={selection[attr.name] ?? ""}
-              onChange={(e) => setSelection((s) => ({ ...s, [attr.name]: e.target.value }))}
-              className="min-h-[var(--tap-min)] cursor-pointer rounded-sm border border-hairline bg-white px-3 py-2 text-ink"
-            >
-              <option value="" disabled>
-                Choose
-              </option>
-              {attr.terms.map((t) => (
-                <option key={t.slug} value={t.slug}>
-                  {t.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ))}
+      <div className="mt-8 grid gap-5">
+        {attributes.map((attr) => {
+          const swatches = swatchImages(attr);
+          const selectedTerm = attr.terms.find((t) => t.slug === selection[attr.name]);
+          return (
+            <fieldset key={attr.name} className="m-0 border-0 p-0">
+              <legend className="mb-2 p-0 text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-eyebrow text-ink-soft">
+                {attr.name}
+                {selectedTerm && <span className="text-ink"> · {selectedTerm.name}</span>}
+              </legend>
+              <div className="flex flex-wrap gap-3" role="radiogroup" aria-label={attr.name}>
+                {attr.terms.map((term) => {
+                  const selected = selection[attr.name] === term.slug;
+                  const swatch = swatches?.get(term.slug);
+                  return (
+                    <button
+                      key={term.slug}
+                      type="button"
+                      role="radio"
+                      aria-checked={selected}
+                      title={term.name}
+                      onClick={() => setSelection((s) => ({ ...s, [attr.name]: term.slug }))}
+                      className={`${chipBase} ${
+                        selected ? "border-strong" : "border-hairline hover:border-strong"
+                      } ${swatch ? "h-14 w-14 overflow-hidden p-0" : "px-4"}`}
+                    >
+                      {swatch ? (
+                        <Image
+                          src={swatch}
+                          alt={term.name}
+                          width={56}
+                          height={56}
+                          className="h-full w-full object-cover"
+                        />
+                      ) : (
+                        <span className="text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-button">
+                          {term.name}
+                        </span>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          );
+        })}
       </div>
 
       {deliveryNotices}
