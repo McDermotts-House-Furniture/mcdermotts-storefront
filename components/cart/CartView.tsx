@@ -6,6 +6,7 @@ import { OrderSummary } from "@/components/cart/OrderSummary";
 import { Button } from "@/components/core/Button";
 import { SectionHeading } from "@/components/core/SectionHeading";
 import { TextLink } from "@/components/core/TextLink";
+import { lineKey } from "@/lib/cart";
 import { formatEuro, lineTotalMinorUnits } from "@/lib/money";
 
 export function CartView() {
@@ -31,7 +32,7 @@ export function CartView() {
       <ul className="grid list-none gap-4 p-0">
         {items.map((item) => (
           <li
-            key={item.productId}
+            key={lineKey(item)}
             className="grid grid-cols-[96px_1fr] gap-4 rounded-md border border-hairline bg-white p-4 sm:grid-cols-[96px_1fr_auto]"
           >
             <div className="relative aspect-[4/5] overflow-hidden rounded-sm bg-stone">
@@ -49,6 +50,11 @@ export function CartView() {
               <TextLink href={`/product/${item.slug}`} className="font-bold">
                 {item.name}
               </TextLink>
+              {item.variantLabel && (
+                <p className="mt-0.5 text-[length:var(--fs-small)] text-ink-soft">
+                  {item.variantLabel}
+                </p>
+              )}
               <p className="mt-1 text-[length:var(--fs-small)] text-ink-soft">
                 {formatEuro(item.priceMinorUnits)} each
               </p>
@@ -61,7 +67,7 @@ export function CartView() {
                   <button
                     type="button"
                     className={stepperButton}
-                    onClick={() => setQty(item.productId, item.quantity - 1)}
+                    onClick={() => setQty(item.productId, item.quantity - 1, item.variationId)}
                     aria-label="Decrease quantity"
                   >
                     −
@@ -72,7 +78,7 @@ export function CartView() {
                   <button
                     type="button"
                     className={stepperButton}
-                    onClick={() => setQty(item.productId, item.quantity + 1)}
+                    onClick={() => setQty(item.productId, item.quantity + 1, item.variationId)}
                     aria-label="Increase quantity"
                   >
                     +
@@ -80,7 +86,7 @@ export function CartView() {
                 </div>
                 <button
                   type="button"
-                  onClick={() => removeItem(item.productId)}
+                  onClick={() => removeItem(item.productId, item.variationId)}
                   className="min-h-[var(--tap-min)] cursor-pointer border-0 bg-transparent p-0 text-[length:var(--fs-small)] text-ink-soft underline transition-colors duration-[var(--dur-base)] hover:text-gold-deep"
                 >
                   Remove

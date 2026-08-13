@@ -95,7 +95,7 @@ export function CheckoutForm() {
       reference: `MCD-${String(Date.now()).slice(-6)}`,
       placedAt: new Date().toISOString(),
       items: items.map((i) => ({
-        name: i.name,
+        name: i.variantLabel ? `${i.name} — ${i.variantLabel}` : i.name,
         quantity: i.quantity,
         priceMinorUnits: i.priceMinorUnits,
       })),

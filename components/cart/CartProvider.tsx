@@ -31,8 +31,8 @@ interface CartContextValue {
   /** False until the localStorage read has run — render empty, not wrong. */
   hydrated: boolean;
   addItem: (item: CartItem) => void;
-  removeItem: (productId: number) => void;
-  setQty: (productId: number, quantity: number) => void;
+  removeItem: (productId: number, variationId?: number) => void;
+  setQty: (productId: number, quantity: number, variationId?: number) => void;
   clear: () => void;
 }
 
@@ -92,8 +92,10 @@ export function CartProvider({ children }: { children: ReactNode }) {
       subtotalMinorUnits: subtotalMinorUnits(state),
       hydrated,
       addItem: (item) => dispatch({ type: "add", item }),
-      removeItem: (productId) => dispatch({ type: "remove", productId }),
-      setQty: (productId, quantity) => dispatch({ type: "setQty", productId, quantity }),
+      removeItem: (productId, variationId) =>
+        dispatch({ type: "remove", productId, variationId }),
+      setQty: (productId, quantity, variationId) =>
+        dispatch({ type: "setQty", productId, variationId, quantity }),
       clear: () => dispatch({ type: "clear" }),
     }),
     [state, hydrated],

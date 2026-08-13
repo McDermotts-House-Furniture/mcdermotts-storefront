@@ -11,9 +11,13 @@ import type { CartItem } from "@/lib/cart";
 export function AddToCart({
   item,
   inStock,
+  unready,
 }: {
   item: Omit<CartItem, "quantity">;
   inStock: boolean;
+  /** When set, the button is disabled and shows this label instead
+      (variable products before a full option selection). */
+  unready?: string;
 }) {
   const { addItem } = useCart();
   const [quantity, setQuantity] = useState(1);
@@ -57,7 +61,7 @@ export function AddToCart({
       </div>
       <Button
         size="lg"
-        disabled={!inStock}
+        disabled={Boolean(unready) || !inStock}
         onClick={() => {
           addItem({ ...item, quantity });
           setJustAdded(true);
@@ -65,7 +69,7 @@ export function AddToCart({
           resetTimer.current = setTimeout(() => setJustAdded(false), 2000);
         }}
       >
-        {!inStock ? "Out of stock" : justAdded ? "Added to your cart" : "Add to cart"}
+        {unready ?? (!inStock ? "Out of stock" : justAdded ? "Added to your cart" : "Add to cart")}
       </Button>
     </div>
   );

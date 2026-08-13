@@ -9,6 +9,7 @@ import { EyebrowLabel } from "@/components/core/EyebrowLabel";
 import { SectionHeading } from "@/components/core/SectionHeading";
 import { AddToCart } from "@/components/product/AddToCart";
 import { ProductGallery } from "@/components/product/ProductGallery";
+import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { homepage } from "@/lib/homepage-data";
 import { sanitizeProductHtml } from "@/lib/sanitize";
 import {
@@ -62,7 +63,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   const brand = product.brands?.[0]?.name;
   const price = displayPrice(product);
-  const isVariable = product.type === "variable";
+  const isVariable = product.type === "variable" && product.variations.length > 0;
   const variationAttributes = product.attributes.filter((a) => a.has_variations);
   const rating = Number(product.average_rating);
   const primaryCategory = product.categories[0];
@@ -72,6 +73,51 @@ export default async function ProductPage({ params }: ProductPageProps) {
         .filter((p) => p.id !== product.id)
         .slice(0, 4)
     : [];
+
+  const galleryImages = product.images.map((img) => ({
+    src: img.src,
+    alt: img.alt || product.name,
+    thumb: img.thumbnail,
+  }));
+
+  const infoHeader = (
+    <>
+      {brand && <EyebrowLabel>{brand}</EyebrowLabel>}
+      <h1
+        className="mt-2 uppercase"
+        style={{
+          fontSize: "var(--fs-h2)",
+          fontWeight: 700,
+          lineHeight: "var(--lh-heading)",
+          letterSpacing: "var(--ls-heading)",
+        }}
+      >
+        {product.name}
+      </h1>
+      {rating > 0 && product.review_count > 0 && (
+        <div className="mt-3 flex items-center gap-2">
+          <StarRating rating={rating} />
+          <span className="text-[length:var(--fs-small)] text-ink-soft">
+            {product.review_count} {product.review_count === 1 ? "review" : "reviews"}
+          </span>
+        </div>
+      )}
+    </>
+  );
+
+  const shortDescription = product.short_description ? (
+    <div
+      className="mt-6 max-w-[var(--measure-body)] [&_img]:hidden [&_p]:mt-2"
+      dangerouslySetInnerHTML={{ __html: sanitizeProductHtml(product.short_description) }}
+    />
+  ) : undefined;
+
+  const footNote = (
+    <p className="mt-6 max-w-[var(--measure-body)] text-[length:var(--fs-small)] text-ink-soft">
+      Delivered and assembled by our own crews — one contribution fee, no surprise charges
+      on the day.
+    </p>
+  );
 
   return (
     <main
@@ -100,108 +146,67 @@ export default async function ProductPage({ params }: ProductPageProps) {
         <span aria-current="page">{product.name}</span>
       </nav>
 
-      <div className="grid gap-[var(--grid-gap)] lg:grid-cols-2 lg:gap-16">
-        <ProductGallery
-          images={product.images.map((img) => ({
-            src: img.src,
-            alt: img.alt || product.name,
-            thumb: img.thumbnail,
-          }))}
+      {isVariable ? (
+        <VariablePurchase
+          productId={product.id}
+          slug={product.slug}
           name={product.name}
+          images={galleryImages}
+          attributes={variationAttributes.map((a) => ({
+            name: a.name,
+            terms: a.terms.map((t) => ({ name: t.name, slug: t.slug })),
+          }))}
+          variations={product.variations}
+          basePrice={{ current: price.current, isRange: price.isRange }}
+          infoHeader={infoHeader}
+          shortDescription={shortDescription}
+          footNote={footNote}
         />
+      ) : (
+        <div className="grid gap-[var(--grid-gap)] lg:grid-cols-2 lg:gap-16">
+          <ProductGallery images={galleryImages} name={product.name} />
 
-        <div>
-          {brand && <EyebrowLabel>{brand}</EyebrowLabel>}
-          <h1
-            className="mt-2 uppercase"
-            style={{
-              fontSize: "var(--fs-h2)",
-              fontWeight: 700,
-              lineHeight: "var(--lh-heading)",
-              letterSpacing: "var(--ls-heading)",
-            }}
-          >
-            {product.name}
-          </h1>
+          <div>
+            {infoHeader}
 
-          {rating > 0 && product.review_count > 0 && (
-            <div className="mt-3 flex items-center gap-2">
-              <StarRating rating={rating} />
-              <span className="text-[length:var(--fs-small)] text-ink-soft">
-                {product.review_count} {product.review_count === 1 ? "review" : "reviews"}
-              </span>
+            <div className="mt-5 flex flex-wrap items-baseline gap-3">
+              {price.isRange && (
+                <span className="text-[length:var(--fs-small)] text-ink-soft">From</span>
+              )}
+              <span className="text-[length:var(--fs-h3)] font-bold">{price.current}</span>
+              {price.old && (
+                <>
+                  <s className="text-ink-soft">{price.old}</s>
+                  <Badge>Sale</Badge>
+                </>
+              )}
             </div>
-          )}
 
-          <div className="mt-5 flex flex-wrap items-baseline gap-3">
-            {price.isRange && (
-              <span className="text-[length:var(--fs-small)] text-ink-soft">From</span>
-            )}
-            <span className="text-[length:var(--fs-h3)] font-bold">{price.current}</span>
-            {price.old && (
-              <>
-                <s className="text-ink-soft">{price.old}</s>
-                <Badge>Sale</Badge>
-              </>
-            )}
-          </div>
+            <p className="mt-2 text-[length:var(--fs-small)] text-ink-soft">
+              {product.stock_availability.text ||
+                (product.is_in_stock ? "In stock" : "Out of stock")}
+            </p>
 
-          <p className="mt-2 text-[length:var(--fs-small)] text-ink-soft">
-            {product.stock_availability.text ||
-              (product.is_in_stock ? "In stock" : "Out of stock")}
-          </p>
+            {shortDescription}
 
-          {product.short_description && (
-            <div
-              className="mt-6 max-w-[var(--measure-body)] [&_img]:hidden [&_p]:mt-2"
-              dangerouslySetInnerHTML={{ __html: sanitizeProductHtml(product.short_description) }}
-            />
-          )}
-
-          {isVariable && variationAttributes.length > 0 && (
-            <div className="mt-8 grid max-w-md gap-4">
-              {variationAttributes.map((attr) => (
-                <label key={attr.id} className="grid gap-1">
-                  <span className="text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-eyebrow text-ink-soft">
-                    {attr.name}
-                  </span>
-                  <select
-                    disabled
-                    className="min-h-[var(--tap-min)] rounded-sm border border-hairline bg-white px-3 py-2 opacity-45"
-                  >
-                    <option>Choose in store</option>
-                    {attr.terms.map((t) => (
-                      <option key={t.id}>{t.name}</option>
-                    ))}
-                  </select>
-                </label>
-              ))}
-              <p className="text-[length:var(--fs-small)] text-ink-soft">
-                Options are chosen in store — visit us in Castlebar or Ennis.
-              </p>
+            <div className="mt-8">
+              <AddToCart
+                item={{
+                  productId: product.id,
+                  slug: product.slug,
+                  name: product.name,
+                  priceMinorUnits: product.prices.price,
+                  image: product.images[0]?.src ?? "",
+                  imageAlt: product.images[0]?.alt || product.name,
+                }}
+                inStock={product.is_in_stock}
+              />
             </div>
-          )}
 
-          <div className="mt-8">
-            <AddToCart
-              item={{
-                productId: product.id,
-                slug: product.slug,
-                name: product.name,
-                priceMinorUnits: product.prices.price,
-                image: product.images[0]?.src ?? "",
-                imageAlt: product.images[0]?.alt || product.name,
-              }}
-              inStock={product.is_in_stock}
-            />
+            {footNote}
           </div>
-
-          <p className="mt-6 max-w-[var(--measure-body)] text-[length:var(--fs-small)] text-ink-soft">
-            Delivered and assembled by our own crews — one contribution fee, no surprise
-            charges on the day.
-          </p>
         </div>
-      </div>
+      )}
 
       {product.description && (
         <section className="mt-16 border-t border-hairline pt-10">

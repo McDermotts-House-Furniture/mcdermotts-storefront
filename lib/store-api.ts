@@ -159,6 +159,15 @@ export async function getProducts(query: ProductsQuery = {}): Promise<ProductsPa
   };
 }
 
+export async function getProductById(id: number): Promise<StoreApiProduct | null> {
+  const res = await fetch(`${STORE_API_BASE}/products/${id}`, {
+    next: { revalidate: REVALIDATE_SECONDS },
+  });
+  if (res.status === 404) return null;
+  if (!res.ok) throw new Error(`Store API ${res.status} for product ${id}`);
+  return (await res.json()) as StoreApiProduct;
+}
+
 export async function getProductBySlug(slug: string): Promise<StoreApiProduct | null> {
   const url = new URL(`${STORE_API_BASE}/products`);
   url.searchParams.set("slug", slug);
