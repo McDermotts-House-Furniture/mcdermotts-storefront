@@ -170,7 +170,7 @@ export function VariablePurchase({
     : images;
 
   const chipBase =
-    "flex min-h-[var(--tap-min)] cursor-pointer items-center justify-center rounded-sm border bg-white transition-colors duration-[var(--dur-base)]";
+    "flex min-h-[var(--tap-min)] cursor-pointer items-center justify-center rounded-sm border transition-colors duration-[var(--dur-base)]";
 
   return (
     <ProductStage
@@ -212,6 +212,17 @@ export function VariablePurchase({
                 {attr.terms.map((term) => {
                   const selected = selection[attr.name] === term.slug;
                   const swatch = swatches?.get(term.slug);
+                  /* Selected state must read at a glance: image tiles take a
+                     2px ink ring offset from the tile (focus keeps its gold
+                     ring); text chips fill with ink, per the DS's secondary
+                     hover treatment. */
+                  const stateClasses = swatch
+                    ? selected
+                      ? "border-strong bg-white outline-2 outline-offset-2 outline-ink"
+                      : "border-hairline bg-white hover:border-strong"
+                    : selected
+                      ? "border-strong bg-ink text-linen"
+                      : "border-hairline bg-white hover:border-strong";
                   return (
                     <button
                       key={term.slug}
@@ -220,9 +231,7 @@ export function VariablePurchase({
                       aria-checked={selected}
                       title={term.name}
                       onClick={() => setSelection((s) => ({ ...s, [attr.name]: term.slug }))}
-                      className={`${chipBase} ${
-                        selected ? "border-strong" : "border-hairline hover:border-strong"
-                      } ${swatch ? "h-14 w-14 overflow-hidden p-0" : "px-4"}`}
+                      className={`${chipBase} ${stateClasses} ${swatch ? "h-14 w-14 overflow-hidden p-0" : "px-4"}`}
                     >
                       {swatch ? (
                         <Image
