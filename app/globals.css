@@ -84,7 +84,24 @@
   --measure-lead: 56ch;
   --measure-body: 68ch;
 
-  /* Spacing + section rhythm */
+  /* Spacing — 4px scale (tokens/spacing.css). An undefined --sp-* var inside a
+     calc() invalidates the whole declaration at computed-value time (this
+     silently killed the PDP's sticky top), so the full scale lives here. */
+  --sp-1: 4px;
+  --sp-2: 8px;
+  --sp-3: 12px;
+  --sp-4: 16px;
+  --sp-5: 20px;
+  --sp-6: 24px;
+  --sp-8: 32px;
+  --sp-10: 40px;
+  --sp-12: 48px;
+  --sp-16: 64px;
+  --sp-20: 80px;
+  --sp-24: 96px;
+  --sp-32: 128px;
+
+  /* Section rhythm */
   --section-pad-y: clamp(56px, 7vw, 112px);
   --section-pad-y-tight: clamp(40px, 5vw, 72px);
   --section-pad-x: clamp(20px, 5vw, 64px);
