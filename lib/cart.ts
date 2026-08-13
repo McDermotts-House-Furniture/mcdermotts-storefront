@@ -61,6 +61,6 @@ export function itemCount(state: CartState): number {
 
 export function subtotalMinorUnits(state: CartState): string {
   return state.items
-    .reduce((sum, i) => sum + BigInt(i.priceMinorUnits) * BigInt(i.quantity), 0n)
+    .reduce((sum, i) => sum + BigInt(i.priceMinorUnits) * BigInt(i.quantity), BigInt(0))
     .toString();
 }
