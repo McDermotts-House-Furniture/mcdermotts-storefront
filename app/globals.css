@@ -1,26 +1,226 @@
 @import "tailwindcss";
 
+/* ------------------------------------------------------------------ */
+/* McDermott's design-system tokens — source of truth:                 */
+/* "McDermott's Design System 2/tokens/*.css". Values ported verbatim. */
+/* ------------------------------------------------------------------ */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Base palette */
+  --mcd-linen: #f6f3ed;
+  --mcd-stone: #eae4d9;
+  --mcd-white: #ffffff;
+  --mcd-ink: #211d17;
+  --mcd-ink-soft: #5b554a;
+  --mcd-dark: #1c1a17;
+  --mcd-darker: #100f0d;
+  --mcd-gold: #d9933d;
+  --mcd-gold-deep: #a96d1c;
+  --mcd-gold-hover: #c07f26;
+
+  /* Derived neutrals */
+  --mcd-ink-12: rgba(33, 29, 23, 0.12);
+  --mcd-ink-08: rgba(33, 29, 23, 0.08);
+  --mcd-white-70: rgba(255, 255, 255, 0.7);
+  --mcd-white-16: rgba(255, 255, 255, 0.16);
+  --mcd-scrim: rgba(16, 15, 13, 0.46);
+
+  /* Semantic — surfaces */
+  --surface-page: var(--mcd-linen);
+  --surface-alt: var(--mcd-stone);
+  --surface-card: var(--mcd-white);
+  --surface-dark: var(--mcd-dark);
+  --surface-darkest: var(--mcd-darker);
+
+  /* Semantic — text */
+  --text-body: var(--mcd-ink);
+  --text-muted: var(--mcd-ink-soft);
+  --text-on-dark: var(--mcd-linen);
+  --text-on-dark-muted: var(--mcd-white-70);
+  --text-accent: var(--mcd-gold-deep);
+  --text-accent-on-dark: var(--mcd-gold);
+  --text-link: var(--mcd-ink);
+  --text-link-hover: var(--mcd-gold-deep);
+
+  /* Semantic — actions */
+  --action-primary-bg: var(--mcd-gold);
+  --action-primary-bg-hover: var(--mcd-gold-hover);
+  --action-primary-fg: var(--mcd-ink);
+  --action-secondary-fg: var(--mcd-ink);
+  --action-secondary-border: var(--mcd-ink);
+  --action-on-dark-fg: var(--mcd-linen);
+  --action-on-dark-border: var(--mcd-white-16);
+
+  /* Semantic — lines and marks */
+  --border-hairline: var(--mcd-ink-12);
+  --border-strong: var(--mcd-ink);
+  --border-on-dark: var(--mcd-white-16);
+  --badge-sale-bg: var(--mcd-gold);
+  --badge-sale-fg: var(--mcd-ink);
+  --star-fill: var(--mcd-gold-deep);
+  --focus-ring: var(--mcd-gold-deep);
+
+  /* Typography — Lato loaded via next/font, exposed as --font-lato in layout.tsx */
+  --font-stack: var(--font-lato), -apple-system, "Helvetica Neue", Arial, sans-serif;
+  --font-weight-body: 400;
+  --font-weight-heading: 700;
+  --font-weight-black: 900;
+  --fs-hero: clamp(2.25rem, 4.6vw, 4rem);
+  --fs-h2: clamp(1.75rem, 2.6vw, 2.5rem);
+  --fs-h3: 1.25rem;
+  --fs-h4: 1.0625rem;
+  --fs-lead: clamp(1.0625rem, 1.3vw, 1.25rem);
+  --fs-body: 1rem;
+  --fs-small: 0.9375rem;
+  --fs-eyebrow: 0.75rem;
+  --fs-micro: 0.6875rem;
+  --lh-tight: 1.06;
+  --lh-heading: 1.14;
+  --lh-body: 1.6;
+  --lh-lead: 1.5;
+  --ls-hero: -0.01em;
+  --ls-heading: 0.01em;
+  --ls-eyebrow: 0.18em;
+  --ls-button: 0.08em;
+  --measure-lead: 56ch;
+  --measure-body: 68ch;
+
+  /* Spacing + section rhythm */
+  --section-pad-y: clamp(56px, 7vw, 112px);
+  --section-pad-y-tight: clamp(40px, 5vw, 72px);
+  --section-pad-x: clamp(20px, 5vw, 64px);
+  --section-gap-title: clamp(28px, 3.5vw, 48px);
+  --grid-gap: clamp(16px, 2vw, 28px);
+  --grid-gap-tight: 12px;
+
+  /* Radius + borders */
+  --radius-sm: 3px; /* buttons, inputs */
+  --radius-md: 4px; /* cards, media frames */
+  --radius-pill: 999px;
+  --rule-width: 4px;
+  --focus-ring-width: 2px;
+  --focus-ring-offset: 3px;
+
+  /* Elevation + scrims */
+  --shadow-card: 0 1px 2px rgba(33, 29, 23, 0.05);
+  --shadow-card-hover: 0 10px 28px rgba(33, 29, 23, 0.12);
+  --shadow-raised: 0 18px 44px rgba(33, 29, 23, 0.16);
+  --shadow-inset-hairline: inset 0 0 0 1px rgba(33, 29, 23, 0.1);
+  --scrim-hero: linear-gradient(
+    90deg,
+    rgba(16, 15, 13, 0.78) 0%,
+    rgba(16, 15, 13, 0.55) 42%,
+    rgba(16, 15, 13, 0.05) 78%
+  );
+  --scrim-tile: linear-gradient(180deg, rgba(16, 15, 13, 0) 40%, rgba(16, 15, 13, 0.62) 100%);
+
+  /* Motion */
+  --ease-out: cubic-bezier(0.22, 0.61, 0.36, 1);
+  --ease-in-out: cubic-bezier(0.4, 0, 0.2, 1);
+  --dur-fast: 140ms;
+  --dur-base: 220ms;
+  --dur-slow: 520ms;
+  --dur-reveal: 700ms;
+  --reveal-rise: 18px;
+  --reveal-stagger: 90ms;
+  --media-zoom: 1.035;
+
+  /* Layout */
+  --container-max: 1280px;
+  --container-narrow: 820px;
+  --container-wide: 1440px;
+  --ratio-tile: 3 / 4;
+  --ratio-product: 4 / 5;
+  --ratio-editorial: 16 / 9;
+  --ratio-hero: 21 / 9;
+  --header-height: 96px;
+  --tap-min: 44px;
 }
 
+/* Tailwind theme — utilities backed by the DS tokens above. */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-linen: var(--mcd-linen);
+  --color-stone: var(--mcd-stone);
+  --color-ink: var(--mcd-ink);
+  --color-ink-soft: var(--mcd-ink-soft);
+  --color-dark: var(--mcd-dark);
+  --color-darker: var(--mcd-darker);
+  --color-gold: var(--mcd-gold);
+  --color-gold-deep: var(--mcd-gold-deep);
+  --color-gold-hover: var(--mcd-gold-hover);
+  --color-hairline: var(--mcd-ink-12);
+  --color-on-dark: var(--mcd-linen);
+  --color-on-dark-muted: var(--mcd-white-70);
+  --color-on-dark-border: var(--mcd-white-16);
+
+  --font-sans: var(--font-stack);
+
+  --radius-sm: 3px;
+  --radius-md: 4px;
+
+  --shadow-card: var(--shadow-card);
+  --shadow-card-hover: var(--shadow-card-hover);
+  --shadow-raised: var(--shadow-raised);
+
+  --ease-out: var(--ease-out);
+  --ease-in-out: var(--ease-in-out);
+
+  --tracking-eyebrow: 0.18em;
+  --tracking-button: 0.08em;
+  --tracking-heading: 0.01em;
+  --tracking-hero: -0.01em;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Global base — mirrors the Flatsome global settings the DS assumes. */
+html {
+  font-size: 100%;
+}
+@media (max-width: 767px) {
+  html {
+    font-size: 85%;
   }
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--surface-page);
+  color: var(--text-body);
+  font-family: var(--font-stack);
+  font-weight: var(--font-weight-body);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Focus — always visible, deep gold, offset. */
+:focus-visible {
+  outline: var(--focus-ring-width) solid var(--focus-ring);
+  outline-offset: var(--focus-ring-offset);
+}
+
+/* Shared scroll-reveal classes — ported verbatim from tokens/motion.css. */
+.mcd-reveal {
+  opacity: 0;
+  transform: translate3d(0, var(--reveal-rise), 0);
+  transition:
+    opacity var(--dur-reveal) var(--ease-out),
+    transform var(--dur-reveal) var(--ease-out);
+}
+.mcd-reveal.is-in {
+  opacity: 1;
+  transform: none;
+}
+.mcd-reveal-2 {
+  transition-delay: var(--reveal-stagger);
+}
+.mcd-reveal-3 {
+  transition-delay: calc(var(--reveal-stagger) * 2);
+}
+.mcd-reveal-4 {
+  transition-delay: calc(var(--reveal-stagger) * 3);
+}
+@media (prefers-reduced-motion: reduce) {
+  .mcd-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
 }
