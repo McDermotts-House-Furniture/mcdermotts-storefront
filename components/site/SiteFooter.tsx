@@ -69,7 +69,7 @@ export function SiteFooter() {
     <footer className="bg-dark px-[var(--section-pad-x)] py-[var(--section-pad-y-tight)] text-on-dark">
       <div className="mx-auto grid max-w-[var(--container-max)] grid-cols-1 gap-10 md:grid-cols-[minmax(220px,1fr)_repeat(3,minmax(150px,1fr))]">
         <div className="flex flex-col gap-4">
-          <Logo tone="onDark" width={200} />
+          <Logo width={200} className="text-on-dark" />
           <p className="m-0 text-[length:var(--fs-small)] leading-[var(--lh-body)] text-on-dark-muted">
             Family-run on Spencer Street, Castlebar since 1964, and on Station Road, Ennis since
             2025.

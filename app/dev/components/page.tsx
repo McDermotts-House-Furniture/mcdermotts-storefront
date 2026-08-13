@@ -316,10 +316,10 @@ export default function ComponentsPage() {
       <section className="flex flex-col gap-10">
         <GroupTitle>brand/</GroupTitle>
 
-        <Spec title="Logo — ink and onDark">
+        <Spec title="Logo — brand, mono and on dark">
           <Logo href="/" />
           <DarkSwatch>
-            <Logo tone="onDark" width={220} />
+            <Logo width={220} className="text-on-dark" /> <Logo variant="white" width={220} /> <Logo variant="gold" width={220} />
           </DarkSwatch>
         </Spec>
 
