@@ -6,7 +6,7 @@ import { ProductCard } from "@/components/cards/ProductCard";
 import { Accordion } from "@/components/commerce/Accordion";
 import { Breadcrumbs } from "@/components/commerce/Breadcrumbs";
 import { BuyControls } from "@/components/commerce/BuyControls";
-import { DeliveryNotice, type DeliveryTone } from "@/components/commerce/DeliveryNotice";
+import { DeliveryNotice } from "@/components/commerce/DeliveryNotice";
 import { DimensionSet, type DimensionItem } from "@/components/commerce/DimensionSet";
 import { Price } from "@/components/commerce/Price";
 import { ProductGallery } from "@/components/commerce/ProductGallery";
@@ -18,6 +18,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { homepage } from "@/lib/homepage-data";
+import { deliveryNoticesFor, rangeLinksFor } from "@/lib/merchandising";
 import { sanitizeProductHtml } from "@/lib/sanitize";
 import {
   formatPrice,
@@ -65,34 +66,6 @@ function displayPrice(product: StoreApiProduct): {
 
 const decodeEntities = (s: string) => s.replace(/&amp;/g, "&");
 
-/* Stock or delivery fact as a DeliveryNotice — no red/green boxes (DS rule). */
-function deliveryProps(product: StoreApiProduct): {
-  tone: DeliveryTone;
-  title: string;
-  body?: string;
-  action?: string;
-  actionHref?: string;
-} {
-  const phone = { action: "094 90 22500", actionHref: "tel:0949022500" };
-  if (!product.is_in_stock) {
-    return {
-      tone: "attention",
-      title: "Out of stock",
-      body: "Ring us — more may be on the way, or on the floor in a showroom.",
-      ...phone,
-    };
-  }
-  if (product.stock_availability.class === "available-on-backorder") {
-    return {
-      tone: "attention",
-      title: "Extended delivery",
-      body: "This piece comes in on a longer lead time. Call us and we'll give you a firm date before you order.",
-      ...phone,
-    };
-  }
-  return { tone: "stock", title: product.stock_availability.text || "In stock" };
-}
-
 /* WooCommerce dimensions are usually empty on this catalogue — render only real data. */
 function dimensionItems(product: StoreApiProduct): DimensionItem[] {
   const d = product.dimensions;
@@ -115,7 +88,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const variationAttributes = product.attributes.filter((a) => a.has_variations);
   const rating = Number(product.average_rating);
   const primaryCategory = product.categories[0];
-  const rangeCategory = product.categories.find((c) => / by /i.test(decodeEntities(c.name)));
+  const rangeLinks = rangeLinksFor(product);
+  const deliveryNotices = deliveryNoticesFor(product);
   const dimensions = dimensionItems(product);
 
   const related = primaryCategory
@@ -169,17 +143,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
     </p>
   );
 
-  /* RangeLink + the accordion stack — everything after the buy area (kit order). */
+  /* Delivery notices stack in theme-rule order (tag-driven, lib/merchandising). */
+  const deliveryStack = (
+    <div className="mt-8 grid gap-5">
+      {deliveryNotices.map((notice) => (
+        <DeliveryNotice key={notice.title + (notice.body ?? "")} {...notice} />
+      ))}
+    </div>
+  );
+
+  /* RangeLinks + the accordion stack — everything after the buy area (kit order). */
   const detailExtras = (
     <>
-      {rangeCategory && (
+      {rangeLinks.map((range) => (
         <RangeLink
+          key={range.href}
           className="mt-8"
-          name={decodeEntities(rangeCategory.name)}
+          name={range.name}
           reason="Everything in the range, in one place."
-          href={`/category/${rangeCategory.slug}`}
+          href={range.href}
         />
-      )}
+      ))}
       <div className="mt-10">
         {product.description && (
           <Accordion title="About this piece" open>
@@ -243,6 +227,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             basePrice={{ current: price.current, isRange: price.isRange }}
             infoHeader={infoHeader}
             shortDescription={shortDescription}
+            deliveryNotices={deliveryStack}
             footNote={footNote}
             detailExtras={detailExtras}
           />
@@ -252,7 +237,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             <Price className="mt-5" current={price.current} old={price.old} from={price.isRange} />
             {shortDescription}
             {dimensions.length > 0 && <DimensionSet className="mt-8" items={dimensions} />}
-            <DeliveryNotice className="mt-8" {...deliveryProps(product)} />
+            {deliveryStack}
             <div className="mt-8">
               <BuyControls
                 item={{

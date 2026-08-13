@@ -62,6 +62,7 @@ export interface StoreApiProduct {
   prices: StoreApiPrices;
   images: StoreApiImage[];
   categories: StoreApiTermRef[];
+  tags?: StoreApiTermRef[];
   brands?: StoreApiTermRef[];
   attributes: StoreApiAttribute[];
   variations: { id: number; attributes: { name: string; value: string }[] }[];

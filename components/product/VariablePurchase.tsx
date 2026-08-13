@@ -30,6 +30,8 @@ interface VariablePurchaseProps {
   /** Server-rendered nodes (brand eyebrow, H1, rating / short description / crews line / range + accordions). */
   infoHeader: ReactNode;
   shortDescription?: ReactNode;
+  /** Tag-driven DeliveryNotice stack (lib/merchandising), rendered above the buy controls. */
+  deliveryNotices?: ReactNode;
   footNote?: ReactNode;
   detailExtras?: ReactNode;
 }
@@ -44,6 +46,7 @@ export function VariablePurchase({
   basePrice,
   infoHeader,
   shortDescription,
+  deliveryNotices,
   footNote,
   detailExtras,
 }: VariablePurchaseProps) {
@@ -146,6 +149,8 @@ export function VariablePurchase({
           </label>
         ))}
       </div>
+
+      {deliveryNotices}
 
       <div className="mt-8">
         <BuyControls
