@@ -31,7 +31,9 @@ export async function getAcfProductFields(slug: string): Promise<AcfProductField
   try {
     const url = new URL(`${WP_API_BASE}/product`);
     url.searchParams.set("slug", slug);
-    url.searchParams.set("_fields", "acf,slug");
+    /* The extra id field also busts the data cache entries written before the
+       ACF group was exposed to REST (2026-08-14). */
+    url.searchParams.set("_fields", "acf,slug,id");
     const res = await fetch(url.toString(), { next: { revalidate: REVALIDATE_SECONDS } });
     if (!res.ok) return null;
     const posts = (await res.json()) as { acf?: Record<string, unknown> | unknown[] }[];
