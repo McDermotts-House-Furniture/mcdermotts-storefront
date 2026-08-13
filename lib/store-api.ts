@@ -49,6 +49,7 @@ export interface StoreApiProduct {
   id: number;
   name: string;
   slug: string;
+  permalink: string;
   type: string; // "simple" | "variable" | ...
   sku: string;
   summary: string;

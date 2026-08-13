@@ -16,6 +16,7 @@ import {
 
 export interface PurchaseAttribute {
   name: string;
+  taxonomy?: string | null;
   terms: { name: string; slug: string }[];
 }
 
@@ -30,6 +31,8 @@ interface VariablePurchaseProps {
   basePrice: { current: string; isRange: boolean };
   /** Woo's default_attributes — preselects the form like the live site. */
   initialSelection?: Selection;
+  /** Curated per-term swatch images (rtwpvs plugin, parsed server-side). */
+  swatchImages?: Record<string, Record<string, string>>;
   /** Server-rendered nodes (brand eyebrow, H1, rating / short description / crews line / range + accordions). */
   infoHeader: ReactNode;
   shortDescription?: ReactNode;
@@ -64,6 +67,7 @@ export function VariablePurchase({
   variations,
   basePrice,
   initialSelection,
+  swatchImages: pluginSwatches,
   infoHeader,
   shortDescription,
   dimensions,
@@ -123,10 +127,16 @@ export function VariablePurchase({
   const loading = resolvedId !== null && !(resolvedId in payloads);
   const failed = resolvedId !== null && resolvedId in payloads && payloads[resolvedId] === null;
 
-  /* An attribute earns image swatches only when every term resolved an image
-     and the images actually differ — a shared photo means the attribute isn't
-     visual (foot options on a sofa) and gets text chips instead. */
+  /* Curated plugin swatches win outright when they cover every term — they're
+     purpose-made texture crops. Otherwise an attribute earns variation-image
+     swatches only when every term resolved an image and the images actually
+     differ — a shared photo means the attribute isn't visual (foot options on
+     a sofa) and gets text chips instead. */
   function swatchImages(attr: PurchaseAttribute): Map<string, string> | null {
+    const plugin = attr.taxonomy ? pluginSwatches?.[attr.taxonomy] : undefined;
+    if (plugin && attr.terms.every((t) => plugin[t.slug])) {
+      return new Map(attr.terms.map((t) => [t.slug, plugin[t.slug]]));
+    }
     const termMap = swatchCandidates.get(attr.name);
     if (!termMap || termMap.size < attr.terms.length) return null;
     const images = new Map<string, string>();

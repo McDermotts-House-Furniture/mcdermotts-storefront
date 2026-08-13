@@ -19,6 +19,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { getAcfProductFields } from "@/lib/acf";
+import { getSwatchImages } from "@/lib/swatches";
 import { getDefaultAttributes } from "@/lib/wc-admin";
 import { homepage } from "@/lib/homepage-data";
 import { deliveryNoticesFor, rangeLinksFor } from "@/lib/merchandising";
@@ -97,6 +98,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const acf = await getAcfProductFields(slug);
   const dimensions = acf?.dimensions.length ? acf.dimensions : dimensionItems(product);
   const defaultSelection = isVariable ? await getDefaultAttributes(product.id) : null;
+  const swatchMap = isVariable ? await getSwatchImages(product.permalink) : null;
 
   const related = primaryCategory
     ? (await getProducts({ category: primaryCategory.id, perPage: 5 })).products
@@ -240,8 +242,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
             images={galleryImages}
             attributes={variationAttributes.map((a) => ({
               name: a.name,
+              taxonomy: a.taxonomy,
               terms: a.terms.map((t) => ({ name: t.name, slug: t.slug })),
             }))}
+            swatchImages={swatchMap ?? undefined}
             variations={product.variations}
             basePrice={{ current: price.current, isRange: price.isRange }}
             initialSelection={defaultSelection ?? undefined}
