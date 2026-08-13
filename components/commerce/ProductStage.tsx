@@ -7,7 +7,8 @@ import type { ReactNode } from "react";
 export function ProductStage({ media, children }: { media: ReactNode; children: ReactNode }) {
   return (
     <div className="grid items-start gap-[var(--grid-gap)] lg:grid-cols-2 lg:gap-16">
-      <div className="lg:sticky lg:top-[calc(var(--header-height)+var(--sp-6))] lg:self-start">
+      {/* calc() needs whitespace around "+" — Tailwind turns "_" into spaces. */}
+      <div className="lg:sticky lg:top-[calc(var(--header-height)_+_var(--sp-6))] lg:self-start">
         {media}
       </div>
       <div className="flex min-w-0 flex-col">{children}</div>

@@ -13,10 +13,12 @@ import { ProductGallery } from "@/components/commerce/ProductGallery";
 import { ProductStage } from "@/components/commerce/ProductStage";
 import { RangeLink } from "@/components/commerce/RangeLink";
 import { EyebrowLabel } from "@/components/core/EyebrowLabel";
+import { TextLink } from "@/components/core/TextLink";
 import { SectionHeading } from "@/components/core/SectionHeading";
 import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
+import { getAcfProductFields } from "@/lib/acf";
 import { homepage } from "@/lib/homepage-data";
 import { deliveryNoticesFor, rangeLinksFor } from "@/lib/merchandising";
 import { sanitizeProductHtml } from "@/lib/sanitize";
@@ -90,7 +92,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const primaryCategory = product.categories[0];
   const rangeLinks = rangeLinksFor(product);
   const deliveryNotices = deliveryNoticesFor(product);
-  const dimensions = dimensionItems(product);
+  /* ACF (theme fields) wins; falls back to Woo's native dimension fields. */
+  const acf = await getAcfProductFields(slug);
+  const dimensions = acf?.dimensions.length ? acf.dimensions : dimensionItems(product);
 
   const related = primaryCategory
     ? (await getProducts({ category: primaryCategory.id, perPage: 5 })).products
@@ -236,7 +240,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
             {infoHeader}
             <Price className="mt-5" current={price.current} old={price.old} from={price.isRange} />
             {shortDescription}
-            {dimensions.length > 0 && <DimensionSet className="mt-8" items={dimensions} />}
+            {(dimensions.length > 0 || acf?.specSheetUrl) && (
+              <div className="mt-8">
+                {dimensions.length > 0 && <DimensionSet items={dimensions} />}
+                {acf?.specSheetUrl && (
+                  <div className="mt-3">
+                    <TextLink href={acf.specSheetUrl}>See more sizes (PDF)</TextLink>
+                  </div>
+                )}
+              </div>
+            )}
             {deliveryStack}
             <div className="mt-8">
               <BuyControls
