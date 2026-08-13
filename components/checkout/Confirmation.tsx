@@ -81,10 +81,20 @@ export function Confirmation() {
             </li>
           ))}
         </ul>
+        {order.deliveryLabel && (
+          <div className="mt-3 flex justify-between gap-4 border-t border-hairline pt-3">
+            <span className="text-ink-soft">{order.deliveryLabel}</span>
+            <span className="font-bold">
+              {order.deliveryMinorUnits === "0"
+                ? "Free"
+                : formatEuro(order.deliveryMinorUnits ?? "0")}
+            </span>
+          </div>
+        )}
         <div className="mt-4 flex justify-between gap-4 border-t border-hairline pt-3">
           <span className="font-bold uppercase tracking-heading">Total</span>
           <span className="text-[length:var(--fs-h3)] font-bold">
-            {formatEuro(order.subtotalMinorUnits)}
+            {formatEuro(order.totalMinorUnits ?? order.subtotalMinorUnits)}
           </span>
         </div>
       </div>
@@ -94,10 +104,9 @@ export function Confirmation() {
           What happens next
         </h2>
         <p className="mt-3 max-w-[var(--measure-body)]">
-          Our own crews deliver and assemble everywhere in Ireland — led by a core team with
-          140 years&apos; combined experience. We&apos;d ring ahead to agree a delivery day
-          for {order.town}, Co. {order.county}, and there&apos;s one contribution fee with no
-          surprise charges on the day.
+          {order.collection
+            ? "We'd ring you the moment it's ready to collect — bring the car, we'll do the lifting."
+            : `Our own crews deliver and assemble everywhere in Ireland — led by a core team with 140 years' combined experience. We'd ring ahead to agree a delivery day for ${order.town}, Co. ${order.county}, with no surprise charges on the day.`}
         </p>
       </div>
 
