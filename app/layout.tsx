@@ -1,5 +1,8 @@
 import type { Metadata } from "next";
 import { Lato } from "next/font/google";
+import { CartProvider } from "@/components/cart/CartProvider";
+import { SiteHeader } from "@/components/site/SiteHeader";
+import { SiteFooter } from "@/components/site/SiteFooter";
 import "./globals.css";
 
 const lato = Lato({
@@ -26,7 +29,13 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={lato.variable}>
-      <body>{children}</body>
+      <body>
+        <CartProvider>
+          <SiteHeader />
+          {children}
+          <SiteFooter />
+        </CartProvider>
+      </body>
     </html>
   );
 }
