@@ -65,6 +65,8 @@ export interface StoreApiProduct {
   brands?: StoreApiTermRef[];
   attributes: StoreApiAttribute[];
   variations: { id: number; attributes: { name: string; value: string }[] }[];
+  /* Often empty on the live catalogue — dimensions mostly live in description HTML. */
+  dimensions?: { length: string; width: string; height: string };
 }
 
 export interface StoreApiCategory {

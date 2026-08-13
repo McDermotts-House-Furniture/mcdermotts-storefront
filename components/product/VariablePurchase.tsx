@@ -1,9 +1,10 @@
 "use client";
 
 import { useEffect, useState, type ReactNode } from "react";
-import { Badge } from "@/components/core/Badge";
-import { AddToCart } from "@/components/product/AddToCart";
-import { ProductGallery, type GalleryImage } from "@/components/product/ProductGallery";
+import { BuyControls } from "@/components/commerce/BuyControls";
+import { Price } from "@/components/commerce/Price";
+import { ProductGallery, type GalleryImage } from "@/components/commerce/ProductGallery";
+import { ProductStage } from "@/components/commerce/ProductStage";
 import type { VariationPayload } from "@/app/api/variation/[id]/route";
 import {
   isCompleteSelection,
@@ -26,10 +27,11 @@ interface VariablePurchaseProps {
   variations: VariationRef[];
   /** Server-formatted fallback price shown before a selection resolves. */
   basePrice: { current: string; isRange: boolean };
-  /** Server-rendered nodes (brand eyebrow, H1, rating / short description / delivery note). */
+  /** Server-rendered nodes (brand eyebrow, H1, rating / short description / crews line / range + accordions). */
   infoHeader: ReactNode;
   shortDescription?: ReactNode;
   footNote?: ReactNode;
+  detailExtras?: ReactNode;
 }
 
 export function VariablePurchase({
@@ -43,6 +45,7 @@ export function VariablePurchase({
   infoHeader,
   shortDescription,
   footNote,
+  detailExtras,
 }: VariablePurchaseProps) {
   const [selection, setSelection] = useState<Selection>({});
   /* Last fetch result, keyed by the variation it was for. The displayed
@@ -74,7 +77,7 @@ export function VariablePurchase({
 
   const variation = fetched?.forId === resolvedId ? fetched.data : null;
   const loading = resolvedId !== null && fetched?.forId !== resolvedId;
-  const failed = fetched?.forId === resolvedId && fetched.data === null;
+  const failed = fetched?.forId === resolvedId && fetched?.data === null;
 
   const variantLabel = attributes
     .map((a) => a.terms.find((t) => t.slug === selection[a.name])?.name)
@@ -96,82 +99,76 @@ export function VariablePurchase({
     : images;
 
   return (
-    <div className="grid gap-[var(--grid-gap)] lg:grid-cols-2 lg:gap-16">
-      <ProductGallery key={variation?.image?.src ?? "base"} images={galleryImages} name={name} />
+    <ProductStage
+      media={
+        <ProductGallery key={variation?.image?.src ?? "base"} images={galleryImages} name={name} />
+      }
+    >
+      {infoHeader}
 
-      <div>
-        {infoHeader}
+      <Price
+        className="mt-5"
+        current={variation ? variation.price : basePrice.current}
+        old={variation?.oldPrice ?? undefined}
+        from={!variation && basePrice.isRange}
+      />
 
-        <div className="mt-5 flex flex-wrap items-baseline gap-3">
-          {!variation && basePrice.isRange && (
-            <span className="text-[length:var(--fs-small)] text-ink-soft">From</span>
-          )}
-          <span className="text-[length:var(--fs-h3)] font-bold">
-            {variation ? variation.price : basePrice.current}
-          </span>
-          {variation?.oldPrice && (
-            <>
-              <s className="text-ink-soft">{variation.oldPrice}</s>
-              <Badge>Sale</Badge>
-            </>
-          )}
-        </div>
+      <p className="mt-2 text-[length:var(--fs-small)] text-ink-soft" aria-live="polite">
+        {variation
+          ? variation.stockText
+          : complete && resolvedId === null
+            ? "That combination isn't available — try different options."
+            : "Choose your options to check availability."}
+      </p>
 
-        <p className="mt-2 text-[length:var(--fs-small)] text-ink-soft" aria-live="polite">
-          {variation
-            ? variation.stockText
-            : complete && resolvedId === null
-              ? "That combination isn't available — try different options."
-              : "Choose your options to check availability."}
-        </p>
+      {shortDescription}
 
-        {shortDescription}
-
-        <div className="mt-8 grid max-w-md gap-4">
-          {attributes.map((attr) => (
-            <label key={attr.name} className="grid gap-1">
-              <span className="text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-eyebrow text-ink-soft">
-                {attr.name}
-              </span>
-              <select
-                value={selection[attr.name] ?? ""}
-                onChange={(e) =>
-                  setSelection((s) => ({ ...s, [attr.name]: e.target.value }))
-                }
-                className="min-h-[var(--tap-min)] cursor-pointer rounded-sm border border-hairline bg-white px-3 py-2 text-ink"
-              >
-                <option value="" disabled>
-                  Choose
+      <div className="mt-8 grid max-w-md gap-4">
+        {attributes.map((attr) => (
+          <label key={attr.name} className="grid gap-1">
+            <span className="text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-eyebrow text-ink-soft">
+              {attr.name}
+            </span>
+            <select
+              value={selection[attr.name] ?? ""}
+              onChange={(e) => setSelection((s) => ({ ...s, [attr.name]: e.target.value }))}
+              className="min-h-[var(--tap-min)] cursor-pointer rounded-sm border border-hairline bg-white px-3 py-2 text-ink"
+            >
+              <option value="" disabled>
+                Choose
+              </option>
+              {attr.terms.map((t) => (
+                <option key={t.slug} value={t.slug}>
+                  {t.name}
                 </option>
-                {attr.terms.map((t) => (
-                  <option key={t.slug} value={t.slug}>
-                    {t.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ))}
-        </div>
-
-        <div className="mt-8">
-          <AddToCart
-            item={{
-              productId,
-              variationId: resolvedId ?? undefined,
-              variantLabel: variantLabel || undefined,
-              slug,
-              name,
-              priceMinorUnits: variation?.priceMinorUnits ?? "0",
-              image: variation?.image?.src ?? images[0]?.src ?? "",
-              imageAlt: variation?.image?.alt || images[0]?.alt || name,
-            }}
-            inStock={variation?.inStock ?? true}
-            unready={unready}
-          />
-        </div>
-
-        {footNote}
+              ))}
+            </select>
+          </label>
+        ))}
       </div>
-    </div>
+
+      <div className="mt-8">
+        <BuyControls
+          item={{
+            productId,
+            variationId: resolvedId ?? undefined,
+            variantLabel: variantLabel || undefined,
+            slug,
+            name,
+            priceMinorUnits: variation?.priceMinorUnits ?? "0",
+            image: variation?.image?.src ?? images[0]?.src ?? "",
+            imageAlt: variation?.image?.alt || images[0]?.alt || name,
+          }}
+          inStock={variation?.inStock ?? true}
+          unready={unready}
+          name={name}
+          price={variation ? variation.price : basePrice.current}
+          oldPrice={variation?.oldPrice ?? undefined}
+        />
+      </div>
+
+      {footNote}
+      {detailExtras}
+    </ProductStage>
   );
 }

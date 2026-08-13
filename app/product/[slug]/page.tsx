@@ -1,14 +1,21 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import { StarRating } from "@/components/brand/StarRating";
 import { TrustPillar } from "@/components/cards/TrustPillar";
 import { ProductCard } from "@/components/cards/ProductCard";
-import { Badge } from "@/components/core/Badge";
+import { Accordion } from "@/components/commerce/Accordion";
+import { Breadcrumbs } from "@/components/commerce/Breadcrumbs";
+import { BuyControls } from "@/components/commerce/BuyControls";
+import { DeliveryNotice, type DeliveryTone } from "@/components/commerce/DeliveryNotice";
+import { DimensionSet, type DimensionItem } from "@/components/commerce/DimensionSet";
+import { Price } from "@/components/commerce/Price";
+import { ProductGallery } from "@/components/commerce/ProductGallery";
+import { ProductStage } from "@/components/commerce/ProductStage";
+import { RangeLink } from "@/components/commerce/RangeLink";
 import { EyebrowLabel } from "@/components/core/EyebrowLabel";
 import { SectionHeading } from "@/components/core/SectionHeading";
-import { AddToCart } from "@/components/product/AddToCart";
-import { ProductGallery } from "@/components/product/ProductGallery";
+import { Reveal } from "@/components/layout/Reveal";
+import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { homepage } from "@/lib/homepage-data";
 import { sanitizeProductHtml } from "@/lib/sanitize";
@@ -56,6 +63,47 @@ function displayPrice(product: StoreApiProduct): {
   return { current: formatPrice(prices.price, prices), isRange: false };
 }
 
+const decodeEntities = (s: string) => s.replace(/&amp;/g, "&");
+
+/* Stock or delivery fact as a DeliveryNotice — no red/green boxes (DS rule). */
+function deliveryProps(product: StoreApiProduct): {
+  tone: DeliveryTone;
+  title: string;
+  body?: string;
+  action?: string;
+  actionHref?: string;
+} {
+  const phone = { action: "094 90 22500", actionHref: "tel:0949022500" };
+  if (!product.is_in_stock) {
+    return {
+      tone: "attention",
+      title: "Out of stock",
+      body: "Ring us — more may be on the way, or on the floor in a showroom.",
+      ...phone,
+    };
+  }
+  if (product.stock_availability.class === "available-on-backorder") {
+    return {
+      tone: "attention",
+      title: "Extended delivery",
+      body: "This piece comes in on a longer lead time. Call us and we'll give you a firm date before you order.",
+      ...phone,
+    };
+  }
+  return { tone: "stock", title: product.stock_availability.text || "In stock" };
+}
+
+/* WooCommerce dimensions are usually empty on this catalogue — render only real data. */
+function dimensionItems(product: StoreApiProduct): DimensionItem[] {
+  const d = product.dimensions;
+  if (!d) return [];
+  return [
+    { label: "Height", value: d.height, unit: "cm" },
+    { label: "Width", value: d.width, unit: "cm" },
+    { label: "Depth", value: d.length, unit: "cm" },
+  ].filter((item) => item.value !== "");
+}
+
 export default async function ProductPage({ params }: ProductPageProps) {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
@@ -67,6 +115,8 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const variationAttributes = product.attributes.filter((a) => a.has_variations);
   const rating = Number(product.average_rating);
   const primaryCategory = product.categories[0];
+  const rangeCategory = product.categories.find((c) => / by /i.test(decodeEntities(c.name)));
+  const dimensions = dimensionItems(product);
 
   const related = primaryCategory
     ? (await getProducts({ category: primaryCategory.id, perPage: 5 })).products
@@ -119,78 +169,92 @@ export default async function ProductPage({ params }: ProductPageProps) {
     </p>
   );
 
-  return (
-    <main
-      className="mx-auto w-full max-w-[var(--container-max)]"
-      style={{ padding: "var(--section-pad-y-tight) var(--section-pad-x)" }}
-    >
-      <nav
-        aria-label="Breadcrumb"
-        className="mb-8 text-[length:var(--fs-micro)] font-bold uppercase tracking-eyebrow text-ink-soft"
-      >
-        <Link href="/" className="text-inherit no-underline hover:underline">
-          Home
-        </Link>
-        {primaryCategory && (
-          <>
-            <span aria-hidden> · </span>
-            <Link
-              href={`/category/${primaryCategory.slug}`}
-              className="text-inherit no-underline hover:underline"
-            >
-              {primaryCategory.name}
-            </Link>
-          </>
-        )}
-        <span aria-hidden> · </span>
-        <span aria-current="page">{product.name}</span>
-      </nav>
-
-      {isVariable ? (
-        <VariablePurchase
-          productId={product.id}
-          slug={product.slug}
-          name={product.name}
-          images={galleryImages}
-          attributes={variationAttributes.map((a) => ({
-            name: a.name,
-            terms: a.terms.map((t) => ({ name: t.name, slug: t.slug })),
-          }))}
-          variations={product.variations}
-          basePrice={{ current: price.current, isRange: price.isRange }}
-          infoHeader={infoHeader}
-          shortDescription={shortDescription}
-          footNote={footNote}
+  /* RangeLink + the accordion stack — everything after the buy area (kit order). */
+  const detailExtras = (
+    <>
+      {rangeCategory && (
+        <RangeLink
+          className="mt-8"
+          name={decodeEntities(rangeCategory.name)}
+          reason="Everything in the range, in one place."
+          href={`/category/${rangeCategory.slug}`}
         />
-      ) : (
-        <div className="grid gap-[var(--grid-gap)] lg:grid-cols-2 lg:gap-16">
-          <ProductGallery images={galleryImages} name={product.name} />
+      )}
+      <div className="mt-10">
+        {product.description && (
+          <Accordion title="About this piece" open>
+            <div
+              className="[&_h2]:mt-4 [&_h2]:font-bold [&_h2]:uppercase [&_h3]:mt-3 [&_h3]:font-bold [&_img]:my-4 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_li]:mt-1 [&_p]:mt-3 [&_p:first-child]:mt-0 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5"
+              dangerouslySetInnerHTML={{ __html: sanitizeProductHtml(product.description) }}
+            />
+          </Accordion>
+        )}
+        <Accordion title="Delivery & assembly">
+          Our own crews deliver and assemble everywhere in Ireland, led by a core team with
+          140 years&apos; combined experience. We&apos;ll agree a day with you and take the
+          packaging away with us.
+        </Accordion>
+        <Accordion title="Seeing it in person">
+          On the floor in Castlebar and Ennis. Both showrooms open Mon – Sat, 9:30 – 18:00;
+          Ennis also opens Sundays and most bank holidays, 12:00 – 17:00.
+        </Accordion>
+        <Accordion title="Returns">
+          Fourteen days to change your mind on anything bought online, unused and in its
+          packaging. Made-to-order pieces are the exception — we&apos;ll say so clearly
+          before you order.
+        </Accordion>
+      </div>
+    </>
+  );
 
-          <div>
+  return (
+    <main>
+      <div
+        className="mx-auto w-full max-w-[var(--container-max)]"
+        style={{ padding: "var(--section-pad-y-tight) var(--section-pad-x)" }}
+      >
+        <Breadcrumbs
+          className="mb-8"
+          items={[
+            { label: "Home", href: "/" },
+            ...(primaryCategory
+              ? [
+                  {
+                    label: decodeEntities(primaryCategory.name),
+                    href: `/category/${primaryCategory.slug}`,
+                  },
+                ]
+              : []),
+            { label: product.name },
+          ]}
+        />
+
+        {isVariable ? (
+          <VariablePurchase
+            productId={product.id}
+            slug={product.slug}
+            name={product.name}
+            images={galleryImages}
+            attributes={variationAttributes.map((a) => ({
+              name: a.name,
+              terms: a.terms.map((t) => ({ name: t.name, slug: t.slug })),
+            }))}
+            variations={product.variations}
+            basePrice={{ current: price.current, isRange: price.isRange }}
+            infoHeader={infoHeader}
+            shortDescription={shortDescription}
+            footNote={footNote}
+            detailExtras={detailExtras}
+          />
+        ) : (
+          <ProductStage media={<ProductGallery images={galleryImages} name={product.name} />}>
             {infoHeader}
-
-            <div className="mt-5 flex flex-wrap items-baseline gap-3">
-              {price.isRange && (
-                <span className="text-[length:var(--fs-small)] text-ink-soft">From</span>
-              )}
-              <span className="text-[length:var(--fs-h3)] font-bold">{price.current}</span>
-              {price.old && (
-                <>
-                  <s className="text-ink-soft">{price.old}</s>
-                  <Badge>Sale</Badge>
-                </>
-              )}
-            </div>
-
-            <p className="mt-2 text-[length:var(--fs-small)] text-ink-soft">
-              {product.stock_availability.text ||
-                (product.is_in_stock ? "In stock" : "Out of stock")}
-            </p>
-
+            <Price className="mt-5" current={price.current} old={price.old} from={price.isRange} />
             {shortDescription}
-
+            {dimensions.length > 0 && <DimensionSet className="mt-8" items={dimensions} />}
+            <DeliveryNotice className="mt-8" {...deliveryProps(product)} />
             <div className="mt-8">
-              <AddToCart
+              <BuyControls
                 item={{
                   productId: product.id,
                   slug: product.slug,
@@ -200,64 +264,62 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   imageAlt: product.images[0]?.alt || product.name,
                 }}
                 inStock={product.is_in_stock}
+                name={product.name}
+                price={price.current}
+                oldPrice={price.old}
               />
             </div>
-
             {footNote}
-          </div>
-        </div>
-      )}
+            {detailExtras}
+          </ProductStage>
+        )}
 
-      {product.description && (
         <section className="mt-16 border-t border-hairline pt-10">
-          <SectionHeading title="About this piece" />
-          <div
-            className="mt-[var(--section-gap-title)] max-w-[var(--measure-body)] [&_h2]:mt-6 [&_h2]:text-[length:var(--fs-h4)] [&_h2]:font-bold [&_h2]:uppercase [&_h3]:mt-4 [&_h3]:font-bold [&_img]:my-4 [&_img]:h-auto [&_img]:max-w-full [&_img]:rounded-md [&_li]:mt-1 [&_p]:mt-3 [&_ul]:mt-3 [&_ul]:list-disc [&_ul]:pl-5"
-            dangerouslySetInnerHTML={{ __html: sanitizeProductHtml(product.description) }}
-          />
-        </section>
-      )}
-
-      <section className="mt-16 border-t border-hairline pt-10">
-        <ul className="grid list-none grid-cols-1 gap-[var(--grid-gap)] p-0 md:grid-cols-3">
-          {homepage.pillars.map((pillar) => (
-            <li key={pillar.title}>
-              <TrustPillar title={pillar.title} body={pillar.body} />
-            </li>
-          ))}
-        </ul>
-      </section>
-
-      {related.length > 0 && primaryCategory && (
-        <section className="mt-16">
-          <SectionHeading
-            title={`More ${primaryCategory.name}`}
-            standfirst="From the same department, in stock now."
-          />
-          <ul
-            className="mt-[var(--section-gap-title)] grid list-none grid-cols-[repeat(auto-fit,minmax(240px,1fr))] p-0"
-            style={{ gap: "var(--grid-gap)" }}
-          >
-            {related.map((p) => {
-              const rel = displayPrice(p);
-              return (
-                <li key={p.id}>
-                  <ProductCard
-                    brand={p.brands?.[0]?.name}
-                    title={p.name}
-                    href={`/product/${p.slug}`}
-                    image={p.images[0]?.src}
-                    alt={p.images[0]?.alt || p.name}
-                    onSale={p.on_sale}
-                    price={rel.current}
-                    oldPrice={rel.old}
-                    sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
-                  />
-                </li>
-              );
-            })}
+          <ul className="grid list-none grid-cols-1 gap-[var(--grid-gap)] p-0 md:grid-cols-3">
+            {homepage.pillars.map((pillar) => (
+              <li key={pillar.title}>
+                <TrustPillar title={pillar.title} body={pillar.body} />
+              </li>
+            ))}
           </ul>
         </section>
+      </div>
+
+      {related.length > 0 && primaryCategory && (
+        <SectionBlock tone="stone" id="mcd-pdp-related">
+          <Reveal>
+            <SectionHeading
+              eyebrow="Goes with it"
+              title={`More ${decodeEntities(primaryCategory.name)}`}
+              standfirst="From the same department, on the floor now."
+            />
+          </Reveal>
+          <Reveal order={2}>
+            <ul
+              className="mt-[var(--section-gap-title)] grid list-none grid-cols-[repeat(auto-fit,minmax(220px,1fr))] p-0"
+              style={{ gap: "var(--grid-gap)" }}
+            >
+              {related.map((p) => {
+                const rel = displayPrice(p);
+                return (
+                  <li key={p.id}>
+                    <ProductCard
+                      brand={p.brands?.[0]?.name}
+                      title={p.name}
+                      href={`/product/${p.slug}`}
+                      image={p.images[0]?.src}
+                      alt={p.images[0]?.alt || p.name}
+                      onSale={p.on_sale}
+                      price={rel.current}
+                      oldPrice={rel.old}
+                      sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
+                    />
+                  </li>
+                );
+              })}
+            </ul>
+          </Reveal>
+        </SectionBlock>
       )}
     </main>
   );
