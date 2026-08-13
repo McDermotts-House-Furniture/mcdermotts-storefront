@@ -47,7 +47,7 @@ const fieldLabel =
 function FieldError({ message }: { message?: string }) {
   if (!message) return null;
   return (
-    <p role="alert" className="mt-1 text-[length:var(--fs-small)] font-bold text-gold-deep">
+    <p role="alert" className="mt-1 text-[length:var(--fs-small)] font-bold">
       {message}
     </p>
   );
@@ -55,7 +55,7 @@ function FieldError({ message }: { message?: string }) {
 
 function SectionTitle({ children }: { children: string }) {
   return (
-    <h2 className="border-t-4 border-gold pt-4 text-[length:var(--fs-h4)] font-bold uppercase tracking-heading">
+    <h2 className="border-t-4 border-ink pt-4 text-[length:var(--fs-h4)] font-bold uppercase tracking-heading">
       {children}
     </h2>
   );

@@ -7,7 +7,7 @@ import { formatEuro } from "@/lib/money";
 /* Shared between /cart and /checkout. The delivery line states the policy
    instead of inventing a number the backend would later contradict. */
 export function OrderSummary({ checkoutCta = false }: { checkoutCta?: boolean }) {
-  const { items, subtotalMinorUnits } = useCart();
+  const { count, subtotalMinorUnits } = useCart();
 
   return (
     <aside className="h-fit rounded-md border border-hairline bg-white p-6 shadow-card">
@@ -17,8 +17,7 @@ export function OrderSummary({ checkoutCta = false }: { checkoutCta?: boolean })
       <dl className="mt-4 grid gap-2">
         <div className="flex justify-between gap-4">
           <dt className="text-ink-soft">
-            Subtotal ({items.reduce((n, i) => n + i.quantity, 0)}{" "}
-            {items.reduce((n, i) => n + i.quantity, 0) === 1 ? "item" : "items"})
+            Subtotal ({count} {count === 1 ? "item" : "items"})
           </dt>
           <dd className="font-bold">{formatEuro(subtotalMinorUnits)}</dd>
         </div>

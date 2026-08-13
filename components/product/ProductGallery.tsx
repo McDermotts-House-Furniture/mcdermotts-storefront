@@ -14,11 +14,8 @@ export function ProductGallery({ images, name }: { images: GalleryImage[]; name:
   const current = images[active] ?? images[0];
 
   if (!current) {
-    return (
-      <div className="flex aspect-[4/5] items-center justify-center rounded-md border border-hairline bg-white text-ink-soft">
-        Photography to follow
-      </div>
-    );
+    /* No photography supplied — an honest empty frame, not a promise. */
+    return <div aria-hidden className="aspect-[4/5] rounded-md border border-hairline bg-stone" />;
   }
 
   return (

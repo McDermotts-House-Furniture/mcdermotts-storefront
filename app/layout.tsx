@@ -6,8 +6,7 @@ import { SiteFooter } from "@/components/site/SiteFooter";
 import "./globals.css";
 
 const lato = Lato({
-  weight: ["400", "700", "900"],
-  style: ["normal", "italic"],
+  weight: ["400", "700"],
   subsets: ["latin"],
   display: "swap",
   variable: "--font-lato",

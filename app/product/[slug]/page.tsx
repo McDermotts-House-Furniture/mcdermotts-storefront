@@ -177,7 +177,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 </label>
               ))}
               <p className="text-[length:var(--fs-small)] text-ink-soft">
-                Options configurable in-store — full online configuration coming.
+                Options are chosen in store — visit us in Castlebar or Ennis.
               </p>
             </div>
           )}

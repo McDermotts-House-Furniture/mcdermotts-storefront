@@ -12,7 +12,7 @@ export function CartView() {
   const { items, hydrated, setQty, removeItem } = useCart();
 
   const stepperButton =
-    "h-[var(--tap-min)] w-10 cursor-pointer border-0 bg-transparent text-ink transition-colors duration-[var(--dur-base)] hover:text-gold-deep disabled:pointer-events-none disabled:opacity-45";
+    "h-[var(--tap-min)] w-[var(--tap-min)] cursor-pointer border-0 bg-transparent text-ink transition-colors duration-[var(--dur-base)] hover:text-gold-deep disabled:pointer-events-none disabled:opacity-45";
 
   if (hydrated && items.length === 0) {
     return (
@@ -20,7 +20,7 @@ export function CartView() {
         <p className="font-bold uppercase tracking-heading">Your cart is empty</p>
         <p className="mt-2 text-ink-soft">Plenty of room in the van, then.</p>
         <div className="mt-6">
-          <Button href="/">Browse the departments</Button>
+          <Button href="/#mcd-02-departments">Browse the departments</Button>
         </div>
       </div>
     );

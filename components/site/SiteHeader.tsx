@@ -18,7 +18,7 @@ export function SiteHeader() {
         <div className="flex items-center gap-6">
           <Link
             href="/#mcd-06-showrooms"
-            className="text-[length:var(--fs-micro)] font-bold uppercase tracking-eyebrow text-ink no-underline"
+            className="inline-flex min-h-[var(--tap-min)] items-center text-[length:var(--fs-micro)] font-bold uppercase tracking-eyebrow text-ink no-underline"
           >
             Find us
           </Link>
@@ -35,7 +35,7 @@ export function SiteHeader() {
           <Link
             key={n.label}
             href={n.href}
-            className="whitespace-nowrap border-b-2 border-transparent pb-1 text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-[.1em] text-ink no-underline transition-[border-color] duration-[var(--dur-base)] ease-out hover:border-gold"
+            className="inline-flex min-h-[var(--tap-min)] items-end whitespace-nowrap border-b-2 border-transparent pb-1 text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-[.1em] text-ink no-underline transition-[border-color] duration-[var(--dur-base)] ease-out hover:border-gold"
           >
             {n.label}
           </Link>
