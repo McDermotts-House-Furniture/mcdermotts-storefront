@@ -1,10 +1,13 @@
 /* Delivery pricing from WooCommerce's own shipping zones (wc/v3, read-only
+
    key in WC_CONSUMER_KEY/SECRET — server only, never sent to the browser).
    Zones are county-keyed flat rates; Woo evaluates zones in order and the
    first zone containing the county wins (Clare sits in two zones — order
    resolves it). Click & Collect (free local_pickup) exists in every zone.
    If the env vars are absent or the fetch fails, callers get null and the
    checkout falls back to the policy line with no figure. */
+
+import { decodeEntities } from "./html";
 
 const WC_API_BASE = "https://mcdermotts.ie/wp-json/wc/v3";
 const REVALIDATE_SECONDS = 3600;
@@ -68,8 +71,6 @@ export function buildShippingConfig(zones: ZoneData[]): ShippingConfig {
 
   return { countyRates, pickup: [...pickupTitles].map((title) => ({ title })) };
 }
-
-const decodeEntities = (s: string) => s.replace(/&amp;/g, "&").replace(/&#038;/g, "&");
 
 /* Woo flat_rate cost is a euro string like "29" or "29.50" → minor units. */
 function euroToMinorUnits(cost: string): string | null {

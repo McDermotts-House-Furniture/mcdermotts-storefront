@@ -3,6 +3,8 @@
    Writes (cart, checkout) are deliberately absent: the prototype's cart is
    client-side (see CONTEXT.md decisions 1–2). */
 
+import { decodeEntities } from "./html";
+
 const STORE_API_BASE = "https://mcdermotts.ie/wp-json/wc/store/v1";
 const REVALIDATE_SECONDS = 3600;
 
@@ -160,6 +162,25 @@ async function storeApiFetch(url: string): Promise<Response> {
   throw lastError;
 }
 
+/* WP HTML-encodes plain-text name fields — decode once at the boundary so
+   every consumer (nav, cards, cart lines, swatch labels) gets clean text.
+   HTML fields (descriptions) stay raw; they're sanitized at render. */
+const decodeTerm = <T extends { name: string }>(t: T): T => ({ ...t, name: decodeEntities(t.name) });
+
+function normalizeProduct(p: StoreApiProduct): StoreApiProduct {
+  return {
+    ...p,
+    name: decodeEntities(p.name),
+    categories: p.categories.map(decodeTerm),
+    tags: p.tags?.map(decodeTerm),
+    brands: p.brands?.map(decodeTerm),
+    attributes: p.attributes.map((a) => ({
+      ...decodeTerm(a),
+      terms: a.terms.map(decodeTerm),
+    })),
+  };
+}
+
 export interface ProductsPage {
   products: StoreApiProduct[];
   total: number;
@@ -170,7 +191,7 @@ export async function getProducts(query: ProductsQuery = {}): Promise<ProductsPa
   const res = await storeApiFetch(buildProductsUrl(query));
   const products = (await res.json()) as StoreApiProduct[];
   return {
-    products,
+    products: products.map(normalizeProduct),
     total: Number(res.headers.get("x-wp-total") ?? products.length),
     totalPages: Number(res.headers.get("x-wp-totalpages") ?? 1),
   };
@@ -179,7 +200,7 @@ export async function getProducts(query: ProductsQuery = {}): Promise<ProductsPa
 export async function getProductById(id: number): Promise<StoreApiProduct | null> {
   try {
     const res = await storeApiFetch(`${STORE_API_BASE}/products/${id}`);
-    return (await res.json()) as StoreApiProduct;
+    return normalizeProduct((await res.json()) as StoreApiProduct);
   } catch (error) {
     if (error instanceof Error && error.message.includes("Store API 404")) return null;
     throw error;
@@ -191,7 +212,7 @@ export async function getProductBySlug(slug: string): Promise<StoreApiProduct | 
   url.searchParams.set("slug", slug);
   const res = await storeApiFetch(url.toString());
   const products = (await res.json()) as StoreApiProduct[];
-  return products[0] ?? null;
+  return products[0] ? normalizeProduct(products[0]) : null;
 }
 
 export async function getCategories(): Promise<StoreApiCategory[]> {
@@ -206,7 +227,7 @@ export async function getCategories(): Promise<StoreApiCategory[]> {
     const res = await storeApiFetch(url.toString());
     categories.push(...((await res.json()) as StoreApiCategory[]));
   }
-  return categories;
+  return categories.map(decodeTerm);
 }
 
 export async function getCategoryBySlug(slug: string): Promise<StoreApiCategory | null> {

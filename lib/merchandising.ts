@@ -1,10 +1,13 @@
 /* Tag-driven merchandising, ported from the Flatsome theme's
+
    short-description template (supplied by Conor, 2026-08-13). The WHEN comes
    from that PHP verbatim — same tag slugs, same rule order, messages stack the
    same way; the HOW is the design system's DeliveryNotice / RangeLink.
    Copy normalised to sentence case (components uppercase their own labels);
    the theme's red "discontinued" styling maps to the gold attention tone —
    this palette has no red. */
+
+import { decodeEntities } from "./html";
 
 import type { DeliveryTone } from "@/components/commerce/DeliveryNotice";
 import type { StoreApiProduct } from "@/lib/store-api";
@@ -142,8 +145,6 @@ const RANGE_RULES: RangeRule[] = [
   { term: "wren-dining-range", name: "Wren Dining Range", href: "/category/wren-dining-range" },
   { term: "sloane-range", name: "Sloane Living & Dining Range", href: external("sloane-range") },
 ];
-
-const decodeEntities = (s: string) => s.replace(/&amp;/g, "&");
 
 export function deliveryNoticesFor(product: StoreApiProduct): DeliveryMessage[] {
   const tagSlugs = new Set((product.tags ?? []).map((t) => t.slug));

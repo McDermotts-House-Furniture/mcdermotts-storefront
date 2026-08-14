@@ -1,6 +1,9 @@
 /* Header navigation with subcategory dropdowns. The top level stays the
+
    curated homepage nav; children come live from the Store API category tree
    (parent → child), so the menus track the real catalogue. */
+
+import { decodeEntities } from "./html";
 
 import { homepage } from "@/lib/homepage-data";
 import { getCategories, type StoreApiCategory } from "@/lib/store-api";
@@ -17,8 +20,6 @@ export interface NavItem {
 }
 
 const MAX_CHILDREN = 12;
-
-const decodeEntities = (s: string) => s.replace(/&amp;/g, "&").replace(/&#038;/g, "&");
 
 export function buildNavTree(
   navConfig: readonly { label: string; href: string }[],

@@ -54,6 +54,8 @@ function CardLink({
   );
 }
 
+/* Media frame is 1:1, not the DS's 4:5 — the client's product photography is
+   square, and a portrait frame crops sofas badly (Conor, 2026-08-14). */
 export function ProductCard({
   brand,
   title,
@@ -72,7 +74,7 @@ export function ProductCard({
     <article className={`flex flex-col gap-4${className ? ` ${className}` : ""}`}>
       <CardLink
         href={href}
-        className="group relative block aspect-[var(--ratio-product)] overflow-hidden rounded-md bg-stone"
+        className="group relative block aspect-square overflow-hidden rounded-md bg-stone"
       >
         {image ? (
           <Image

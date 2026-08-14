@@ -19,6 +19,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { getAcfProductFields } from "@/lib/acf";
+import { decodeEntities } from "@/lib/html";
 import { getSwatchImages } from "@/lib/swatches";
 import { getDefaultAttributes } from "@/lib/wc-admin";
 import { homepage } from "@/lib/homepage-data";
@@ -67,8 +68,6 @@ function displayPrice(product: StoreApiProduct): {
   }
   return { current: formatPrice(prices.price, prices), isRange: false };
 }
-
-const decodeEntities = (s: string) => s.replace(/&amp;/g, "&");
 
 /* WooCommerce dimensions are usually empty on this catalogue — render only real data. */
 function dimensionItems(product: StoreApiProduct): DimensionItem[] {
