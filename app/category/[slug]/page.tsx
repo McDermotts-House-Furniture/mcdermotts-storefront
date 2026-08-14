@@ -108,7 +108,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         </div>
       ) : (
         <ul
-          className="mt-[var(--section-gap-title)] grid list-none grid-cols-[repeat(auto-fit,minmax(240px,1fr))] p-0"
+          className="mt-[var(--section-gap-title)] grid list-none grid-cols-2 p-0 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]"
           style={{ gap: "var(--grid-gap)" }}
         >
           {products.map((product, i) => (

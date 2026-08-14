@@ -3,6 +3,7 @@ import { Lato } from "next/font/google";
 import { CartProvider } from "@/components/cart/CartProvider";
 import { SiteHeader } from "@/components/site/SiteHeader";
 import { SiteFooter } from "@/components/site/SiteFooter";
+import { getNavTree } from "@/lib/nav";
 import "./globals.css";
 
 const lato = Lato({
@@ -21,16 +22,17 @@ export const metadata: Metadata = {
     "Family-run furniture showrooms in Castlebar and Ennis since 1964. Sofas, mattresses, bedroom, dining and living furniture, delivered and assembled nationwide by our own crews.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const nav = await getNavTree();
   return (
     <html lang="en" className={lato.variable}>
       <body>
         <CartProvider>
-          <SiteHeader />
+          <SiteHeader nav={nav} />
           {children}
           <SiteFooter />
         </CartProvider>
