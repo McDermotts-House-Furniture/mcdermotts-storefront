@@ -101,6 +101,8 @@ export interface ProductsQuery {
   page?: number;
   perPage?: number;
   sort?: ProductSort;
+  /** Free-text catalogue search — used by landing pages' product blocks. */
+  search?: string;
 }
 
 export function buildProductsUrl(query: ProductsQuery): string {
@@ -108,6 +110,7 @@ export function buildProductsUrl(query: ProductsQuery): string {
   if (query.category !== undefined) url.searchParams.set("category", String(query.category));
   if (query.page !== undefined) url.searchParams.set("page", String(query.page));
   if (query.perPage !== undefined) url.searchParams.set("per_page", String(query.perPage));
+  if (query.search !== undefined) url.searchParams.set("search", query.search);
   if (query.sort !== undefined) {
     const { orderby, order } = sortToParams(query.sort);
     url.searchParams.set("orderby", orderby);
