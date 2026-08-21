@@ -36,6 +36,25 @@ interface ProductPageProps {
   params: Promise<{ slug: string }>;
 }
 
+/* The 90-night mattress trial only applies to King Koil mattresses — and even
+   there, Dromoland Castle is excluded (hotel-spec model, sold on its own terms).
+   Everywhere else the third trust pillar becomes the Google rating instead. */
+const GOOGLE_RATING_PILLAR = {
+  title: "4.8 stars on Google",
+  body: "Rated 4.8 out of 5 across 200+ reviews from customers in Mayo, Clare and beyond.",
+};
+/* Matches all three sizes: dromoland-castle-{double,king,superking}-mattress-by-king-koil. */
+const isDromolandCastle = (slug: string) => slug.startsWith("dromoland-castle-");
+
+function pillarsFor(product: StoreApiProduct) {
+  const isKingKoil = product.brands?.some((b) => b.slug === "king-koil") ?? false;
+  const showMattressTrial = isKingKoil && !isDromolandCastle(product.slug);
+  if (showMattressTrial) return homepage.pillars;
+  return homepage.pillars.map((p) =>
+    p.title === "90-night mattress trial" ? GOOGLE_RATING_PILLAR : p,
+  );
+}
+
 export async function generateMetadata({ params }: ProductPageProps): Promise<Metadata> {
   const { slug } = await params;
   const product = await getProductBySlug(slug);
@@ -285,7 +304,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
         <section className="mt-16 border-t border-hairline pt-10">
           <ul className="grid list-none grid-cols-1 gap-[var(--grid-gap)] p-0 md:grid-cols-3">
-            {homepage.pillars.map((pillar) => (
+            {pillarsFor(product).map((pillar) => (
               <li key={pillar.title}>
                 <TrustPillar title={pillar.title} body={pillar.body} />
               </li>
