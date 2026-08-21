@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** Small uppercase pill. The gold `sale` tone is a permitted gold use; keep to one per card. */
+/** Small uppercase pill. The `sale` tone uses the dedicated badge-sale tokens (red). */
 export interface BadgeProps {
   children?: ReactNode;
   tone?: "sale" | "quiet" | "outline";
@@ -8,7 +8,7 @@ export interface BadgeProps {
 }
 
 const tones: Record<NonNullable<BadgeProps["tone"]>, string> = {
-  sale: "bg-gold text-ink",
+  sale: "bg-[var(--badge-sale-bg)] text-[var(--badge-sale-fg)]",
   quiet: "bg-ink text-linen",
   outline: "bg-transparent text-ink shadow-[inset_0_0_0_1px_var(--border-strong)]",
 };

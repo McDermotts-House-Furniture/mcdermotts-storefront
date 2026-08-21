@@ -16,6 +16,7 @@
   --mcd-gold: #d9933d;
   --mcd-gold-deep: #a96d1c;
   --mcd-gold-hover: #c07f26;
+  --mcd-red: #c0392b;
 
   /* Derived neutrals */
   --mcd-ink-12: rgba(33, 29, 23, 0.12);
@@ -54,8 +55,8 @@
   --border-hairline: var(--mcd-ink-12);
   --border-strong: var(--mcd-ink);
   --border-on-dark: var(--mcd-white-16);
-  --badge-sale-bg: var(--mcd-gold);
-  --badge-sale-fg: var(--mcd-ink);
+  --badge-sale-bg: var(--mcd-red);
+  --badge-sale-fg: var(--mcd-linen);
   --star-fill: var(--mcd-gold-deep);
   --focus-ring: var(--mcd-gold-deep);
 
@@ -164,6 +165,7 @@
   --color-gold: var(--mcd-gold);
   --color-gold-deep: var(--mcd-gold-deep);
   --color-gold-hover: var(--mcd-gold-hover);
+  --color-red: var(--mcd-red);
   --color-hairline: var(--mcd-ink-12);
   --color-on-dark: var(--mcd-linen);
   --color-on-dark-muted: var(--mcd-white-70);
