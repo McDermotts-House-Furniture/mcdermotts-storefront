@@ -19,6 +19,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { VariablePurchase } from "@/components/product/VariablePurchase";
 import { getAcfProductFields } from "@/lib/acf";
+import { resolveModelRef } from "@/lib/wp-content";
 import { decodeEntities } from "@/lib/html";
 import { getSwatchImages } from "@/lib/swatches";
 import { getDefaultAttributes } from "@/lib/wc-admin";
@@ -115,6 +116,9 @@ export default async function ProductPage({ params }: ProductPageProps) {
   /* ACF (theme fields) wins; falls back to Woo's native dimension fields. */
   const acf = await getAcfProductFields(slug);
   const dimensions = acf?.dimensions.length ? acf.dimensions : dimensionItems(product);
+  /* Model link (mcdermotts-content plugin): the range story authored once in
+     WP, surfaced on every product that belongs to the model. */
+  const modelRef = acf?.modelRef ? await resolveModelRef(acf.modelRef) : null;
   const defaultSelection = isVariable ? await getDefaultAttributes(product.id) : null;
   const swatchMap = isVariable ? await getSwatchImages(product.permalink) : null;
 
@@ -194,6 +198,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
   /* RangeLinks + the accordion stack — everything after the buy area (kit order). */
   const detailExtras = (
     <>
+      {modelRef && (
+        <RangeLink
+          className="mt-8"
+          eyebrow="Part of the range"
+          name={modelRef.title}
+          reason={modelRef.standfirst ?? "The full range story, in one place."}
+          href={modelRef.href}
+        />
+      )}
       {rangeLinks.map((range) => (
         <RangeLink
           key={range.href}

@@ -28,11 +28,13 @@ export type LandingBlock =
     }
   | {
       /** Live ProductCard grid from the Store API. Renders nothing when the
-          query finds no products (showroom-only ranges). */
+          query finds no products (showroom-only ranges). CMS-authored pages
+          pick products by id (ACF relationship); `search` is the fallback. */
       type: "products";
       title: string;
       standfirst?: string;
-      search: string;
+      ids?: number[];
+      search?: string;
     }
   | {
       /** For ranges not sold online — the showroom is the product. */
