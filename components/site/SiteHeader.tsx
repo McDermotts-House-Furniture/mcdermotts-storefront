@@ -14,7 +14,7 @@ import type { NavItem } from "@/lib/nav";
 export function SiteHeader({ nav }: { nav: NavItem[] }) {
   const { count, hydrated } = useCart();
   return (
-    <header className="sticky top-0 z-20 border-b border-hairline bg-linen">
+    <header className="sticky top-0 z-20 border-b border-hairline bg-stone">
       <div className="mx-auto flex max-w-[var(--container-wide)] items-center justify-between gap-8 px-[var(--section-pad-x)] pt-[18px]">
         <Logo href="/" width={230} />
         <div className="flex items-center gap-6">

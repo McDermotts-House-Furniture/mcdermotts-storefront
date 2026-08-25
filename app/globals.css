@@ -26,7 +26,7 @@
   --mcd-scrim: rgba(16, 15, 13, 0.46);
 
   /* Semantic — surfaces */
-  --surface-page: var(--mcd-linen);
+  --surface-page: var(--mcd-stone);
   --surface-alt: var(--mcd-stone);
   --surface-card: var(--mcd-white);
   --surface-dark: var(--mcd-dark);
@@ -147,7 +147,7 @@
   --container-narrow: 820px;
   --container-wide: 1440px;
   --ratio-tile: 3 / 4;
-  --ratio-product: 4 / 5;
+  --ratio-product: 1 / 1;
   --ratio-editorial: 16 / 9;
   --ratio-hero: 21 / 9;
   --header-height: 96px;

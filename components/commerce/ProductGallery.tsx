@@ -9,7 +9,7 @@ export interface GalleryImage {
   thumb?: string;
 }
 
-/* Product gallery. Desktop (lg+): one 4:5 frame with a thumbnail strip beneath.
+/* Product gallery. Desktop (lg+): one 1:1 frame with a thumbnail strip beneath.
    Mobile: full-width scroll-snap carousel with a dot row and an "n / total"
    counter — no thumbnails, no arrows. Both variants render; CSS picks one. */
 export function ProductGallery({ images, name }: { images: GalleryImage[]; name: string }) {
@@ -18,7 +18,7 @@ export function ProductGallery({ images, name }: { images: GalleryImage[]; name:
 
   if (images.length === 0) {
     /* No photography supplied — an honest empty frame, not a promise. */
-    return <div aria-hidden className="aspect-[4/5] rounded-md border border-hairline bg-stone" />;
+    return <div aria-hidden className="aspect-[var(--ratio-product)] rounded-md border border-hairline bg-stone" />;
   }
 
   const current = images[active] ?? images[0];
@@ -27,7 +27,7 @@ export function ProductGallery({ images, name }: { images: GalleryImage[]; name:
     <div>
       {/* Desktop: frame + thumbnails */}
       <div className="hidden flex-col gap-3 lg:flex">
-        <div className="relative aspect-[4/5] overflow-hidden rounded-md bg-white">
+        <div className="relative aspect-[var(--ratio-product)] overflow-hidden rounded-md bg-white">
           <Image
             src={current.src}
             alt={current.alt || name}
@@ -69,7 +69,7 @@ export function ProductGallery({ images, name }: { images: GalleryImage[]; name:
         >
           {images.map((img, i) => (
             <li key={img.src} className="w-full flex-none snap-center">
-              <div className="relative aspect-[4/5] overflow-hidden bg-white">
+              <div className="relative aspect-[var(--ratio-product)] overflow-hidden bg-white">
                 <Image
                   src={img.src}
                   alt={img.alt || name}

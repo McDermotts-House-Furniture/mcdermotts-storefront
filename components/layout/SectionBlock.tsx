@@ -16,7 +16,7 @@ export interface SectionBlockProps {
 }
 
 const tones: Record<NonNullable<SectionBlockProps["tone"]>, string> = {
-  linen: "bg-linen text-ink",
+  linen: "bg-stone text-ink",
   stone: "bg-stone text-ink",
   white: "bg-white text-ink",
   dark: "bg-dark text-on-dark",
