@@ -83,10 +83,16 @@ export interface StoreApiCategory {
   image: StoreApiImage | null;
 }
 
-export type ProductSort = "newest" | "price-asc" | "price-desc";
+export type ProductSort = "popularity" | "newest" | "price-asc" | "price-desc";
 
 export function sortToParams(sort: ProductSort): { orderby: string; order?: string } {
   switch (sort) {
+    /* "Popularity" here means Declan's own manually-set WooCommerce menu
+       order (Declan, 2026-08-27: "controlled by my manually adjusted menu
+       count") — not WooCommerce's separate total_sales-based `popularity`
+       orderby, which is a different, unrelated sort. */
+    case "popularity":
+      return { orderby: "menu_order" };
     case "newest":
       return { orderby: "date" };
     case "price-asc":
@@ -142,6 +148,23 @@ export function formatPrice(
         (value % divisor).toString().padStart(digits, "0")
       : "";
   return `${prices.currency_prefix}${grouped}${fraction}${prices.currency_suffix}`;
+}
+
+/** Real WooCommerce tag ("Permanently Low", slug permanently-low) — these
+    products are already at their lowest price, so they never get the red
+    sale treatment regardless of what on_sale happens to read (Declan,
+    2026-08-27: "give all products that are not tagged or categorised as
+    permanently low a red markdown price... whereas every product that is
+    tagged or categorised as permanently low should not have a red 'sale'
+    pill"). Checks both categories and tags — "categorised" was in the ask
+    too, even though only a tag exists on the live catalogue today. */
+const PERMANENTLY_LOW_SLUG = "permanently-low";
+
+export function isPermanentlyLow(product: StoreApiProduct): boolean {
+  return (
+    product.categories.some((c) => c.slug === PERMANENTLY_LOW_SLUG) ||
+    (product.tags ?? []).some((t) => t.slug === PERMANENTLY_LOW_SLUG)
+  );
 }
 
 /* The WP host intermittently answers API calls with an HTML error page
@@ -236,4 +259,14 @@ export async function getCategories(): Promise<StoreApiCategory[]> {
 export async function getCategoryBySlug(slug: string): Promise<StoreApiCategory | null> {
   const categories = await getCategories();
   return categories.find((c) => c.slug === slug) ?? null;
+}
+
+/** Live child categories of a parent, alphabetical, empty ones dropped —
+    same rule lib/nav.ts's header dropdowns use, no MAX_CHILDREN cap here
+    since this drives a scrollable strip built to hold more than a dropdown
+    comfortably would. */
+export function getChildCategories(categories: StoreApiCategory[], parentId: number): StoreApiCategory[] {
+  return categories
+    .filter((c) => c.parent === parentId && c.count > 0)
+    .sort((a, b) => a.name.localeCompare(b.name));
 }

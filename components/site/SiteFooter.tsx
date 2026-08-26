@@ -28,7 +28,7 @@ const cols: Array<{ title: string; links: FooterLink[] }> = [
     links: [
       { label: "Get in touch", href: "#top" },
       { label: "About us", href: "https://mcdermotts.ie/about/" },
-      { label: "Find us", href: "/#mcd-06-showrooms" },
+      { label: "Find us", href: "/about/find-us" },
       { label: "Delivery information", href: "#top" },
       { label: "Returns policy", href: "#top" },
       { label: "Careers at McDermott's", href: "#top" },

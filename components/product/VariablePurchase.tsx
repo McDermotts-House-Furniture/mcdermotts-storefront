@@ -29,6 +29,10 @@ interface VariablePurchaseProps {
   variations: VariationRef[];
   /** Server-formatted fallback price shown before a selection resolves. */
   basePrice: { current: string; isRange: boolean };
+  /** Red price + Sale badge — computed server-side from isPermanentlyLow,
+      constant across every variation (the tag is per-product, not
+      per-variation). */
+  onSale: boolean;
   /** Woo's default_attributes — preselects the form like the live site. */
   initialSelection?: Selection;
   /** Curated per-term swatch images (rtwpvs plugin, parsed server-side). */
@@ -66,6 +70,7 @@ export function VariablePurchase({
   attributes,
   variations,
   basePrice,
+  onSale,
   initialSelection,
   swatchImages: pluginSwatches,
   infoHeader,
@@ -185,6 +190,7 @@ export function VariablePurchase({
         current={variation ? variation.price : basePrice.current}
         old={variation?.oldPrice ?? undefined}
         from={!variation && basePrice.isRange}
+        onSale={onSale}
       />
 
       <p className="mt-2 text-[length:var(--fs-small)] text-ink-soft" aria-live="polite">

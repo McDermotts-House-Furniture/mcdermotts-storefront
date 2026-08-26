@@ -43,8 +43,16 @@ describe("getRangesByTags", () => {
     expect(mack?.tags).toEqual(expect.arrayContaining(["corner", "chaise"]));
   });
 
-  it("empty tag query matches every live range (the hub)", () => {
-    expect(getRangesByTags([]).length).toBe(getLiveRanges().length);
+  it("empty tag query matches every TAGGED live range (the hub) — not literally every range on the site", () => {
+    const tagged = getLiveRanges().filter((r) => r.tags.length > 0);
+    expect(getRangesByTags([]).length).toBe(tagged.length);
+    expect(getRangesByTags([]).every((r) => r.tags.length > 0)).toBe(true);
+  });
+
+  it("a range with no tags never appears in any tag query, including the empty one (the mattress-in-the-sofa-hub bug)", () => {
+    const untagged = getLiveRanges().find((r) => r.slug === "xtra-life-plus-1600-by-king-koil");
+    expect(untagged?.tags).toEqual([]);
+    expect(getRangesByTags([])).not.toContainEqual(untagged);
   });
 
   it("AND-combines multiple tags, not OR", () => {

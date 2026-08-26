@@ -19,7 +19,7 @@ export function SiteHeader({ nav }: { nav: NavItem[] }) {
         <Logo href="/" width={230} />
         <div className="flex items-center gap-6">
           <Link
-            href="/#mcd-06-showrooms"
+            href="/about/find-us"
             className="inline-flex min-h-[var(--tap-min)] items-center text-[length:var(--fs-micro)] font-bold uppercase tracking-eyebrow text-ink no-underline"
           >
             Find us
@@ -31,7 +31,10 @@ export function SiteHeader({ nav }: { nav: NavItem[] }) {
       </div>
       <nav
         aria-label="Departments"
-        className="mx-auto flex max-w-[var(--container-wide)] gap-6 overflow-x-auto px-[var(--section-pad-x)] pt-3.5 pb-4 lg:overflow-x-visible"
+        /* pb-2, not pb-4 (Declan, 2026-08-27: "reduce the padding on the
+           bottom of the header, by half") — this is the header's own bottom
+           padding, on every page (SiteHeader is shared layout chrome). */
+        className="mx-auto flex max-w-[var(--container-wide)] gap-6 overflow-x-auto px-[var(--section-pad-x)] pt-3.5 pb-2 lg:overflow-x-visible"
       >
         {nav.map((item) => {
           const hasDropdown = item.children.length > 0 || Boolean(item.sections);

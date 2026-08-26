@@ -4,16 +4,35 @@ import { notFound } from "next/navigation";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { Pagination } from "@/components/category/Pagination";
 import { SortSelect } from "@/components/category/SortSelect";
+import { SubcategoryNav } from "@/components/category/SubcategoryNav";
 import { SectionHeading } from "@/components/core/SectionHeading";
 import {
   formatPrice,
+  getCategories,
   getCategoryBySlug,
+  getChildCategories,
   getProducts,
+  isPermanentlyLow,
   type ProductSort,
   type StoreApiProduct,
 } from "@/lib/store-api";
 
 const PER_PAGE = 24;
+
+/* The parent department pages that get a subcategory strip (Declan,
+   2026-08-27: "all sofas, mattresses, bedroom furniture, living room,
+   dining room, and accessories") — deliberately not every category page,
+   and a different set from generateStaticParams' pre-render list below
+   (that one includes garden-furniture and latest-arrivals; this one
+   doesn't, and adds all-accessories, which isn't pre-rendered at all). */
+const SUBCATEGORY_PARENT_SLUGS = new Set([
+  "all-sofas",
+  "all-mattresses",
+  "bedroom-furniture",
+  "living-room-furniture",
+  "dining-room-furniture",
+  "all-accessories",
+]);
 
 interface CategoryPageProps {
   params: Promise<{ slug: string }>;
@@ -44,10 +63,19 @@ export async function generateMetadata({ params }: CategoryPageProps): Promise<M
   };
 }
 
+/* Default is "popularity" (Declan, 2026-08-27) — his own manually-set menu
+   order, not "newest". Anything else not recognised also falls back to it,
+   same as the old "newest" fallback did. */
 function parseSort(raw: string | undefined): ProductSort {
-  return raw === "price-asc" || raw === "price-desc" ? raw : "newest";
+  if (raw === "popularity" || raw === "newest" || raw === "price-asc" || raw === "price-desc") return raw;
+  return "popularity";
 }
 
+/* Whether to show a struck-through old price is still on_sale-driven — you
+   can't strike through a discount that doesn't exist in the data. The Sale
+   badge and red current-price colour are a separate question, gated on
+   isPermanentlyLow instead (see the ProductCard call below): a product not
+   tagged permanently-low always reads as on sale, on_sale flag or not. */
 function cardPrices(product: StoreApiProduct): { price: string; oldPrice?: string } {
   const { prices } = product;
   if (product.on_sale && prices.regular_price !== prices.price) {
@@ -67,17 +95,33 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
   const category = await getCategoryBySlug(slug);
   if (!category) notFound();
 
-  const { products, total, totalPages } = await getProducts({
-    category: category.id,
-    page,
-    perPage: PER_PAGE,
-    sort,
-  });
+  const showSubcategories = SUBCATEGORY_PARENT_SLUGS.has(slug);
+  const [{ products, total, totalPages }, categories] = await Promise.all([
+    getProducts({ category: category.id, page, perPage: PER_PAGE, sort }),
+    showSubcategories ? getCategories() : Promise.resolve([]),
+  ]);
+  const subcategories = showSubcategories ? getChildCategories(categories, category.id) : [];
 
   return (
     <main
-      className="mx-auto w-full max-w-[var(--container-max)]"
-      style={{ padding: "var(--section-pad-y-tight) var(--section-pad-x)" }}
+      /* --container-wide, matching the sofa collection pages (Declan,
+         2026-08-27: "same sizing of images, as well as being 3 columns
+         wide, as the sofa collection pages") — grid-cols-3 alone isn't
+         enough for the cards to actually come out the same size; they also
+         need the same container width to divide up. */
+      className="mx-auto w-full max-w-[var(--container-wide)]"
+      /* Top halved (Declan, 2026-08-27: "reduce the gap between the bottom
+         of the header, and the breadcrumbs") — the previous attempt at this
+         (halving SiteHeader's own bottom padding) barely moved the visible
+         gap, since almost all of it is this page's own top padding, not the
+         header's. Bottom and the sides keep --section-pad-y-tight/
+         --section-pad-x as before. */
+      style={{
+        paddingTop: "calc(var(--section-pad-y-tight) / 2)",
+        paddingBottom: "var(--section-pad-y-tight)",
+        paddingLeft: "var(--section-pad-x)",
+        paddingRight: "var(--section-pad-x)",
+      }}
     >
       <nav
         aria-label="Breadcrumb"
@@ -99,6 +143,10 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         <SortSelect current={sort} />
       </div>
 
+      <SubcategoryNav
+        items={subcategories.map((c) => ({ label: c.name, href: `/category/${c.slug}` }))}
+      />
+
       {products.length === 0 ? (
         <div className="mt-[var(--section-gap-title)] rounded-md border border-hairline bg-white p-12 text-center">
           <p className="font-bold uppercase tracking-heading">Nothing here right now</p>
@@ -108,7 +156,12 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
         </div>
       ) : (
         <ul
-          className="mt-[var(--section-gap-title)] grid list-none grid-cols-2 p-0 sm:grid-cols-[repeat(auto-fit,minmax(240px,1fr))]"
+          /* Same fluid-then-3-columns shape as the sofa collection pages
+             (Declan, 2026-08-27) — grid-cols-2 stays as the mobile base
+             (unchanged, wasn't asked for); sm:/lg: now match collection
+             pages exactly (220px minmax, pinned to 3 at lg) rather than
+             this page's own previous 240px/no-pin rule. */
+          className="mt-[var(--section-gap-title)] grid list-none grid-cols-2 p-0 sm:grid-cols-[repeat(auto-fit,minmax(220px,1fr))] lg:grid-cols-3"
           style={{ gap: "var(--grid-gap)" }}
         >
           {products.map((product, i) => (
@@ -119,9 +172,9 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 href={`/product/${product.slug}`}
                 image={product.images[0]?.src}
                 alt={product.images[0]?.alt || product.name}
-                onSale={product.on_sale}
-                eager={i < 4 && page === 1}
-                sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
+                onSale={!isPermanentlyLow(product)}
+                eager={i < 3 && page === 1}
+                sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
                 {...cardPrices(product)}
               />
             </li>

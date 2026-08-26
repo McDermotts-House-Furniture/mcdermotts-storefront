@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import type { CSSProperties, ReactNode } from "react";
 
 /**
  * Full-bleed section wrapper with a centred container.
@@ -13,6 +13,10 @@ export interface SectionBlockProps {
   width?: "default" | "narrow" | "wide";
   children?: ReactNode;
   className?: string;
+  /** Inline overrides (e.g. a one-off tighter paddingTop) — a `py-*` class
+      here wouldn't reliably beat the base py- utility's own specificity, so
+      this exists for the rare case that genuinely needs one. */
+  style?: CSSProperties;
 }
 
 const tones: Record<NonNullable<SectionBlockProps["tone"]>, string> = {
@@ -36,6 +40,7 @@ export function SectionBlock({
   width = "default",
   children,
   className,
+  style,
 }: SectionBlockProps) {
   return (
     <section
@@ -43,6 +48,7 @@ export function SectionBlock({
       className={`${tones[tone]} px-[var(--section-pad-x)] ${
         tight ? "py-[var(--section-pad-y-tight)]" : "py-[var(--section-pad-y)]"
       }${className ? ` ${className}` : ""}`}
+      style={style}
     >
       <div className={`mx-auto flex flex-col gap-[var(--section-gap-title)] ${widths[width]}`}>
         {children}

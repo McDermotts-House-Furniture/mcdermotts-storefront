@@ -3,7 +3,10 @@
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import type { ProductSort } from "@/lib/store-api";
 
+/* Popularity first — it's the default (Declan, 2026-08-27), and is his own
+   manually-set menu order, not a sales-based metric (see sortToParams). */
 const options: { value: ProductSort; label: string }[] = [
+  { value: "popularity", label: "Popularity" },
   { value: "newest", label: "Newest" },
   { value: "price-asc", label: "Price, low to high" },
   { value: "price-desc", label: "Price, high to low" },

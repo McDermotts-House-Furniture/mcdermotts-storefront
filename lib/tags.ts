@@ -18,6 +18,7 @@ export const TAGS: TagDef[] = [
   { slug: "2-seater", label: "2 Seater", kind: "type" },
   { slug: "2-5-seater", label: "2.5 Seater", kind: "type" },
   { slug: "3-seater", label: "3 Seater", kind: "type" },
+  { slug: "4-seater", label: "4 Seater", kind: "type" },
   { slug: "corner", label: "Corner", kind: "type" },
   { slug: "modular", label: "Modular", kind: "type" },
   { slug: "recliner", label: "Recliner", kind: "type" },
@@ -33,6 +34,7 @@ export const TAGS: TagDef[] = [
   { slug: "snuggler", label: "Cuddler / Snuggler", kind: "type" },
   { slug: "chaise", label: "Chaise", kind: "type" },
   { slug: "footstool", label: "Footstool", kind: "type" },
+  { slug: "swivel-chair", label: "Swivel Chair", kind: "type" },
 
   /* Material. */
   { slug: "fabric", label: "Fabric", kind: "material" },
@@ -43,6 +45,7 @@ export const TAGS: TagDef[] = [
      plain-language equivalents deliberately sit side by side; both should
      resolve to the same ranges rather than competing near-empty pages. */
   { slug: "foam-seat-cushions", label: "Foam Seat Cushions", kind: "feature" },
+  { slug: "fibre-cushions", label: "Fibre Cushions", kind: "feature" },
   { slug: "high-back", label: "High Back", kind: "feature" },
   { slug: "deep-seat", label: "Deep Seat", kind: "feature" },
   { slug: "firm-seat", label: "Firm Seat", kind: "feature" },
@@ -61,6 +64,8 @@ export const TAGS: TagDef[] = [
   { slug: "alexander-and-james", label: "Alexander & James", kind: "brand" },
   { slug: "stressless", label: "Stressless", kind: "brand" },
   { slug: "la-z-boy", label: "La-Z-Boy", kind: "brand" },
+  { slug: "calia-italia", label: "Calia Italia", kind: "brand" },
+  { slug: "xooon", label: "XOOON", kind: "brand" },
 ];
 
 const bySlug = new Map(TAGS.map((t) => [t.slug, t]));

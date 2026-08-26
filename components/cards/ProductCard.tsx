@@ -9,7 +9,7 @@ import { Badge } from "../core/Badge";
  * Category pages: pass pre-formatted `price` (and `oldPrice` + `onSale` while a sale runs).
  */
 export interface ProductCardProps {
-  /** Brand line above the title, e.g. "Fama". */
+  /** Shown beside the title, right-aligned, e.g. "Fama". */
   brand?: string;
   title?: string;
   /** Homepage variant: one-line descriptor in place of a price. Verified against the live catalogue. */
@@ -93,17 +93,36 @@ export function ProductCard({
         ) : null}
       </CardLink>
       <div className="flex flex-col gap-2">
-        <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-eyebrow text-ink-soft">
-          {brand}
-        </p>
-        <h3 className="m-0 text-[length:var(--fs-h3)] leading-[var(--lh-heading)] font-bold uppercase tracking-heading">
-          <CardLink href={href} className="text-ink no-underline">
-            {title}
-          </CardLink>
-        </h3>
+        {/* Brand moved beside the title instead of stacked above it (Declan,
+            2026-08-27: "the sofa range names are too far away from its own
+            images... move brand names to the right side under the image if
+            you must") — a dedicated brand line, present or not, was adding
+            a full line of height above every title, on top of which the
+            previous fix (a non-breaking-space placeholder to keep brand and
+            non-brand cards aligned) only made permanent. Titles now sit the
+            same short distance under the image on every card, brand or not.
+            flex-wrap: a long product title (category/related-products use
+            this same card with real WooCommerce names, not just short range
+            names) drops the brand to its own line underneath rather than
+            forcing a collision. */}
+        <div className="flex flex-wrap items-baseline justify-between gap-x-3 gap-y-0.5">
+          <h3 className="m-0 text-[length:var(--fs-h3)] leading-[var(--lh-heading)] font-bold uppercase tracking-heading">
+            <CardLink href={href} className="text-ink no-underline">
+              {title}
+            </CardLink>
+          </h3>
+          {brand ? (
+            <span className="text-[length:var(--fs-micro)] whitespace-nowrap uppercase tracking-eyebrow text-ink-soft">
+              {brand}
+            </span>
+          ) : null}
+        </div>
         {price ? (
           <p className="m-0 text-[length:var(--fs-small)] leading-[var(--lh-body)]">
-            <span className="font-bold text-ink">{price}</span>
+            {/* Red, not text-ink, whenever onSale (Declan, 2026-08-27) —
+                driven by lib/store-api's isPermanentlyLow at the call site,
+                not raw on_sale; see there for why. */}
+            <span className={`font-bold ${onSale ? "text-red" : "text-ink"}`}>{price}</span>
             {oldPrice ? (
               <span className="ml-2 text-ink-soft line-through">{oldPrice}</span>
             ) : null}

@@ -31,6 +31,7 @@ describe("formatPrice", () => {
 
 describe("sortToParams", () => {
   it.each<[ProductSort, string, string | undefined]>([
+    ["popularity", "menu_order", undefined],
     ["newest", "date", undefined],
     ["price-asc", "price", "asc"],
     ["price-desc", "price", "desc"],

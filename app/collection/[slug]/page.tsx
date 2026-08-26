@@ -26,25 +26,42 @@ export async function generateMetadata({ params }: CollectionPageProps): Promise
   return { title: `${collection.title} — McDermott's House Furnishers`, description: collection.standfirst };
 }
 
+/* "Corner", "Accent Chair" → "a corner", "an accent chair" — the descriptor
+   below reads as a sentence fragment, so it needs the right indefinite
+   article, not just a lowercased label. "Modular" is the one type tag that
+   isn't a noun at all ("available as modular", not "available as a
+   modular") — carved out rather than guessed at grammatically. */
+function withArticle(label: string): string {
+  if (label === "Modular") return label.toLowerCase();
+  const article = /^[aeiou]/i.test(label) ? "an" : "a";
+  return `${article} ${label.toLowerCase()}`;
+}
+
 /* Image fallback, 3-tier (spec §6): a config-specific photo beats the
    default image, which beats nothing — a default image with no note is
    never acceptable, since the customer filtered for that configuration and
    deserves to know whether the range actually comes that way. Only applies
    when the collection is itself a configuration (a "type" tag) — a brand or
-   material collection has no "configuration" to be missing a photo of. */
+   material collection has no "configuration" to be missing a photo of.
+
+   The descriptor itself shows regardless of which branch fires (Declan,
+   2026-08-27: Mack was missing it — it has a real corner photo, so the code
+   used to treat that as reason enough to skip the note; Declan wants it on
+   every card on the page, real photo or not). Wording dropped "Also" too —
+   on a page you're already viewing because it's the corner collection,
+   "also" says nothing "available as a corner" doesn't — capitalised as
+   "Available…" instead, same day, once it was the first word standing
+   alone rather than following "Also". */
 function cardImageFor(
   range: LandingPage,
   queryTags: string[],
 ): { image: string; alt: string; descriptor?: string } {
   const typeTag = queryTags.map(getTag).find((t) => t?.kind === "type");
   if (typeTag) {
+    const descriptor = `Available as ${withArticle(typeTag.label)}`;
     const photo = range.configPhotos?.[typeTag.slug];
-    if (photo) return { image: photo.src, alt: photo.alt };
-    return {
-      image: range.heroImage,
-      alt: range.heroAlt,
-      descriptor: `Also available as ${typeTag.label.toLowerCase()}`,
-    };
+    if (photo) return { image: photo.src, alt: photo.alt, descriptor };
+    return { image: range.heroImage, alt: range.heroAlt, descriptor };
   }
   return { image: range.heroImage, alt: range.heroAlt };
 }
@@ -64,8 +81,20 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   return (
     <main>
       <div
-        className="mx-auto w-full max-w-[var(--container-max)]"
-        style={{ padding: "var(--section-pad-y) var(--section-pad-x)" }}
+        /* --container-wide, not --container-max (Declan, 2026-08-27: "are
+           you able to make them any larger?") — same token the site header
+           runs at (1440px vs 1280px), so each of the 3 desktop cards gets a
+           bit more room without changing the column count. */
+        className="mx-auto w-full max-w-[var(--container-wide)]"
+        /* Top halved (Declan, 2026-08-27: "reduce the gap between the bottom
+           of the header, and the breadcrumbs") — same fix as the category
+           and product pages. Bottom and the sides unchanged. */
+        style={{
+          paddingTop: "calc(var(--section-pad-y) / 2)",
+          paddingBottom: "var(--section-pad-y)",
+          paddingLeft: "var(--section-pad-x)",
+          paddingRight: "var(--section-pad-x)",
+        }}
       >
         <Breadcrumbs
           className="mb-8"
@@ -79,7 +108,14 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
 
         {ranges.length > 0 ? (
           <ul
-            className="mt-[var(--section-gap-title)] grid list-none grid-cols-[repeat(auto-fit,minmax(220px,1fr))] p-0"
+            /* lg:grid-cols-3, not part of the base rule (Declan, 2026-08-27:
+               "3 columns instead of 4... make no changes to mobile") — the
+               fluid auto-fit rule below lg is untouched, so mobile and
+               tablet keep whatever column count they already had; only the
+               desktop breakpoint is pinned to a fixed 3 instead of however
+               many 220px-min tiles happened to fit (4, in a --container-max
+               row). */
+            className="mt-[var(--section-gap-title)] grid list-none grid-cols-[repeat(auto-fit,minmax(220px,1fr))] p-0 lg:grid-cols-3"
             style={{ gap: "var(--grid-gap)" }}
           >
             {ranges.map((range) => {
@@ -93,7 +129,10 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
                     href={`/range/${range.slug}`}
                     image={image}
                     alt={alt}
-                    sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
+                    /* 33vw at lg+, not 25vw — matches the new 3-column desktop
+                       grid; below lg unchanged (still whatever the fluid
+                       auto-fit grid actually renders at tablet width). */
+                    sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
                   />
                 </li>
               );

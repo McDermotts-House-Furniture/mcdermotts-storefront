@@ -29,6 +29,7 @@ import {
   formatPrice,
   getProductBySlug,
   getProducts,
+  isPermanentlyLow,
   type StoreApiProduct,
 } from "@/lib/store-api";
 
@@ -234,7 +235,16 @@ export default async function ProductPage({ params }: ProductPageProps) {
     <main>
       <div
         className="mx-auto w-full max-w-[var(--container-max)]"
-        style={{ padding: "var(--section-pad-y-tight) var(--section-pad-x)" }}
+        /* Top halved (Declan, 2026-08-27: "reduce the gap between the bottom
+           of the header, and the breadcrumbs") — same fix as the category
+           page, same reasoning: this page's own top padding, not the
+           header's, is what made the gap. Bottom and the sides unchanged. */
+        style={{
+          paddingTop: "calc(var(--section-pad-y-tight) / 2)",
+          paddingBottom: "var(--section-pad-y-tight)",
+          paddingLeft: "var(--section-pad-x)",
+          paddingRight: "var(--section-pad-x)",
+        }}
       >
         <Breadcrumbs
           className="mb-8"
@@ -266,6 +276,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
             swatchImages={swatchMap ?? undefined}
             variations={product.variations}
             basePrice={{ current: price.current, isRange: price.isRange }}
+            onSale={!isPermanentlyLow(product)}
             initialSelection={defaultSelection ?? undefined}
             infoHeader={infoHeader}
             shortDescription={shortDescription}
@@ -277,7 +288,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
         ) : (
           <ProductStage media={<ProductGallery images={galleryImages} name={product.name} />}>
             {infoHeader}
-            <Price className="mt-5" current={price.current} old={price.old} from={price.isRange} />
+            <Price
+              className="mt-5"
+              current={price.current}
+              old={price.old}
+              from={price.isRange}
+              onSale={!isPermanentlyLow(product)}
+            />
             {shortDescription}
             {dimensionsNode}
             {deliveryStack}
@@ -337,7 +354,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       href={`/product/${p.slug}`}
                       image={p.images[0]?.src}
                       alt={p.images[0]?.alt || p.name}
-                      onSale={p.on_sale}
+                      onSale={!isPermanentlyLow(p)}
                       price={rel.current}
                       oldPrice={rel.old}
                       sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
