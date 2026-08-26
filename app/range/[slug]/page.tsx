@@ -1,17 +1,28 @@
 import type { Metadata } from "next";
 import Image from "next/image";
-import { notFound } from "next/navigation";
+import { notFound, redirect } from "next/navigation";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { TrustPillar } from "@/components/cards/TrustPillar";
 import { Breadcrumbs } from "@/components/commerce/Breadcrumbs";
+import { ShowroomStatusLine } from "@/components/commerce/ShowroomStatusLine";
 import { SpecList } from "@/components/commerce/SpecList";
 import { Button } from "@/components/core/Button";
 import { EyebrowLabel } from "@/components/core/EyebrowLabel";
 import { SectionHeading } from "@/components/core/SectionHeading";
 import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
-import { getLandingPage, getLandingSlugs, type LandingBlock } from "@/lib/landing-data";
+import { COLLECTIONS } from "@/lib/collection-data";
+import { getLandingPage, getLandingSlugs, isRangeLive, type LandingBlock } from "@/lib/landing-data";
 import { formatPrice, getProducts } from "@/lib/store-api";
+
+/* Where a not-live range's traffic goes (spec §5: "search engines and old
+   bookmarks are the harder case... sending that traffic to the collection
+   the range belonged to keeps the customer moving"). Picks the first tagged
+   collection the range would have appeared in; falls back to the hub. */
+function fallbackCollectionSlugFor(tags: string[]): string {
+  const match = COLLECTIONS.find((c) => c.tags.length > 0 && c.tags.every((t) => tags.includes(t)));
+  return match?.slug ?? "full-collection";
+}
 
 /* Marketing landing template — the prototype twin of the Flatsome pages the
    marketing team builds per range (henrik-sofa-range, xtra-life-plus-1600…).
@@ -157,6 +168,10 @@ export default async function LandingPageRoute({ params }: LandingProps) {
   const { slug } = await params;
   const page = getLandingPage(slug);
   if (!page) notFound();
+  /* Publishing rule (spec §5): both showrooms "not on display" means the
+     range comes off the site — not a 404 (that loses a page with real
+     search-ranking history), a redirect to the collection it belonged to. */
+  if (!isRangeLive(page)) redirect(`/collection/${fallbackCollectionSlugFor(page.tags)}`);
 
   return (
     <main>
@@ -188,6 +203,18 @@ export default async function LandingPageRoute({ params }: LandingProps) {
           </p>
         </div>
       </section>
+
+      {/* Compact showroom status — "high and small" (spec §5): directly under
+          the hero so it stays above the fold without pushing the photography
+          down, purely factual, no softening. The fuller showroom section
+          with hours/phone/directions lives in the "showroom" block below,
+          where there's room to frame it properly. */}
+      <div
+        className="mx-auto w-full max-w-[var(--container-max)] border-b border-hairline pt-5 pb-5"
+        style={{ paddingLeft: "var(--section-pad-x)", paddingRight: "var(--section-pad-x)" }}
+      >
+        <ShowroomStatusLine status={page.showroomStatus} />
+      </div>
 
       {page.blocks.map(renderBlock)}
     </main>
