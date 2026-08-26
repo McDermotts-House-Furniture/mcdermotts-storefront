@@ -67,7 +67,7 @@ function cardImageFor(
 }
 
 function brandFor(range: LandingPage): string | undefined {
-  const brandTag = range.tags.map(getTag).find((t) => t?.kind === "brand");
+  const brandTag = (range.tags ?? []).map(getTag).find((t) => t?.kind === "brand");
   return brandTag?.label;
 }
 

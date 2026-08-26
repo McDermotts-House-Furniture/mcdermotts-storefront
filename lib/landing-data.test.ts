@@ -34,6 +34,10 @@ describe("isRangeLive", () => {
       isRangeLive(page({ showroomStatus: { castlebar: "not-on-display", ennis: "not-on-display" } })),
     ).toBe(false);
   });
+
+  it("is live when showroomStatus is entirely absent (a WP page with no ACF field for it yet) — exempt from the gate, not treated as both-not-on-display", () => {
+    expect(isRangeLive(page({ showroomStatus: undefined }))).toBe(true);
+  });
 });
 
 describe("getRangesByTags", () => {
@@ -44,9 +48,9 @@ describe("getRangesByTags", () => {
   });
 
   it("empty tag query matches every TAGGED live range (the hub) — not literally every range on the site", () => {
-    const tagged = getLiveRanges().filter((r) => r.tags.length > 0);
+    const tagged = getLiveRanges().filter((r) => (r.tags ?? []).length > 0);
     expect(getRangesByTags([]).length).toBe(tagged.length);
-    expect(getRangesByTags([]).every((r) => r.tags.length > 0)).toBe(true);
+    expect(getRangesByTags([]).every((r) => (r.tags ?? []).length > 0)).toBe(true);
   });
 
   it("a range with no tags never appears in any tag query, including the empty one (the mattress-in-the-sofa-hub bug)", () => {
@@ -57,14 +61,14 @@ describe("getRangesByTags", () => {
 
   it("AND-combines multiple tags, not OR", () => {
     const results = getRangesByTags(["corner", "chaise"]);
-    expect(results.every((r) => r.tags.includes("corner") && r.tags.includes("chaise"))).toBe(true);
+    expect(results.every((r) => (r.tags ?? []).includes("corner") && (r.tags ?? []).includes("chaise"))).toBe(true);
   });
 });
 
 describe("tag discipline", () => {
   it("every range tag is in the controlled vocabulary", () => {
     for (const range of getLiveRanges()) {
-      for (const tag of range.tags) {
+      for (const tag of range.tags ?? []) {
         expect(getTag(tag), `"${tag}" on ${range.slug} is not a defined tag`).toBeDefined();
       }
     }

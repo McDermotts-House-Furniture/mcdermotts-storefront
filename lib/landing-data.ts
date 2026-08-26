@@ -42,11 +42,13 @@ export type LandingBlock =
     }
   | {
       /** Live ProductCard grid from the Store API. Renders nothing when the
-          query finds no products (showroom-only ranges). */
+          query finds no products (showroom-only ranges). CMS-authored pages
+          pick products by id (ACF relationship); `search` is the fallback. */
       type: "products";
       title: string;
       standfirst?: string;
-      search: string;
+      ids?: number[];
+      search?: string;
     }
   | {
       /** For ranges not sold online — the showroom is the product. */
@@ -101,9 +103,21 @@ export interface LandingPage {
   /** Tag slugs from lib/tags.ts. Means "available as", almost never "is" —
       a range tagged "corner" is a range you CAN have as a corner, not
       necessarily what the hero photo shows. Apply conservatively: a missing
-      tag costs a click, a false one costs a showroom visit and trust. */
-  tags: string[];
-  showroomStatus: ShowroomAvailability;
+      tag costs a click, a false one costs a showroom visit and trust.
+      Optional (2026-08-27 merge with the WordPress CMS branch) only because
+      a WP-authored page has no ACF field for it yet — every entry in
+      LANDING_PAGES below still sets it. Untagged/undefined both mean the
+      same thing everywhere this is read: excluded from every tag-driven
+      collection, same as a range explicitly tagged with nothing. */
+  tags?: string[];
+  /** Optional for the same reason as tags — no ACF field yet on the WP
+      side. Undefined is NOT the same as "not on display": per the hard
+      rule this project has followed all along, showroom status is never
+      inferred, so a page with no data here is treated as live/unpublished-
+      gate-exempt (see isRangeLive) rather than guessed at either way; it
+      just doesn't get a status line or a real value in the enquiry form
+      until someone sets it. */
+  showroomStatus?: ShowroomAvailability;
   /** Configuration-specific photography for the collection-page image
       fallback (spec §6): when a collection page filters by a type tag
       (corner, chaise…) and a photo of the range in that exact configuration
@@ -119,8 +133,16 @@ export interface LandingPage {
 /** The publishing rule: a range is live only while at least one showroom can
     still show it or has one arriving. Both "not-on-display" means nobody can
     say when, or whether, it's coming back — the range comes off the site,
-    not just off the grid. */
+    not just off the grid.
+
+    No showroomStatus at all (a WP-authored page with no ACF field for it
+    yet, 2026-08-27) is NOT the same as both-not-on-display: this rule only
+    ever applies to a status that's actually been set, one way or the
+    other. A page with none is exempt from this specific gate, not silently
+    unpublished by it — same "never inferred" principle, applied to the
+    absence of data instead of a guess at its value. */
 export function isRangeLive(page: LandingPage): boolean {
+  if (!page.showroomStatus) return true;
   const { castlebar, ennis } = page.showroomStatus;
   return castlebar !== "not-on-display" || ennis !== "not-on-display";
 }
@@ -1349,9 +1371,12 @@ export function getLiveRanges(): LandingPage[] {
     against an empty tags array (Declan, 2026-08-26). There's no real
     department/category field yet to scope "sofas only" properly — this is
     the minimal fix for the sofa hub specifically, not that bigger build;
-    mattresses get their own real handling later. */
+    mattresses get their own real handling later. Undefined tags (a WP page
+    with no ACF field for it yet, 2026-08-27) reads exactly the same as an
+    empty array here — excluded either way. */
 export function getRangesByTags(tagSlugs: string[]): LandingPage[] {
-  return getLiveRanges().filter(
-    (page) => page.tags.length > 0 && tagSlugs.every((t) => page.tags.includes(t)),
-  );
+  return getLiveRanges().filter((page) => {
+    const tags = page.tags ?? [];
+    return tags.length > 0 && tagSlugs.every((t) => tags.includes(t));
+  });
 }

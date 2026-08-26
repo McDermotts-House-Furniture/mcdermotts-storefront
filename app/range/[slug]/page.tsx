@@ -315,9 +315,14 @@ function renderBlock(block: LandingBlock, index: number, isFirst: boolean, page:
           <Reveal order={2}>
             <RangeEnquiryForm
               rangeName={page.title}
-              tags={page.tags}
+              tags={page.tags ?? []}
               pageUrl={`/range/${page.slug}`}
-              showroomStatus={page.showroomStatus}
+              /* Not-on-display/not-on-display, not a guess at "on-display"
+                 (2026-08-27) — a WP page with no ACF field for this yet
+                 (see LandingPage.showroomStatus) still needs some value for
+                 the form's hidden fields; the conservative one that never
+                 claims a showroom has it. */
+              showroomStatus={page.showroomStatus ?? { castlebar: "not-on-display", ennis: "not-on-display" }}
               className="mt-4 max-w-[var(--container-narrow)]"
             />
           </Reveal>
@@ -333,7 +338,7 @@ export default async function LandingPageRoute({ params }: LandingProps) {
   /* Publishing rule (spec §5): both showrooms "not on display" means the
      range comes off the site — not a 404 (that loses a page with real
      search-ranking history), a redirect to the collection it belonged to. */
-  if (!isRangeLive(page)) redirect(`/collection/${fallbackCollectionSlugFor(page.tags)}`);
+  if (!isRangeLive(page)) redirect(`/collection/${fallbackCollectionSlugFor(page.tags ?? [])}`);
 
   return (
     <main>
@@ -404,13 +409,20 @@ export default async function LandingPageRoute({ params }: LandingProps) {
           the hero so it stays above the fold without pushing the photography
           down, purely factual, no softening. The fuller showroom section
           with hours/phone/directions lives in the "showroom" block below,
-          where there's room to frame it properly. */}
-      <div
-        className="mx-auto mb-10 w-full max-w-[var(--container-wide)] border-b border-hairline pt-3 pb-3"
-        style={{ paddingLeft: "var(--section-pad-x)", paddingRight: "var(--section-pad-x)" }}
-      >
-        <ShowroomStatusLine status={page.showroomStatus} />
-      </div>
+          where there's room to frame it properly.
+
+          Omitted entirely when there's no showroomStatus at all (a WP page
+          with no ACF field for it yet, 2026-08-27) — nothing here is ever
+          inferred, so a genuinely unknown status shows nothing rather than
+          a fabricated one. */}
+      {page.showroomStatus && (
+        <div
+          className="mx-auto mb-10 w-full max-w-[var(--container-wide)] border-b border-hairline pt-3 pb-3"
+          style={{ paddingLeft: "var(--section-pad-x)", paddingRight: "var(--section-pad-x)" }}
+        >
+          <ShowroomStatusLine status={page.showroomStatus} />
+        </div>
+      )}
 
       {/* Pulls the block stack up slightly, into the mb-10 above (real
           margin, sitting outside the border) — not onto the bordered box
@@ -419,8 +431,15 @@ export default async function LandingPageRoute({ params }: LandingProps) {
           the hairline; margins collapse safely, painted boxes don't.
           SectionBlock's own top padding is generous by design for
           block-to-block spacing everywhere else, so this is scoped to just
-          this one gap rather than shrinking that padding globally. */}
-      <div className="-mt-8">{page.blocks.map((block, i) => renderBlock(block, i, i === 0, page))}</div>
+          this one gap rather than shrinking that padding globally.
+
+          -mt-8 only applies when the divider above it actually rendered
+          (2026-08-27) — with no showroomStatus there's no mb-10 to collapse
+          into, and pulling the block stack up regardless would overlap it
+          into the hero instead. */}
+      <div className={page.showroomStatus ? "-mt-8" : undefined}>
+        {page.blocks.map((block, i) => renderBlock(block, i, i === 0, page))}
+      </div>
     </main>
   );
 }

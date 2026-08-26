@@ -12,6 +12,9 @@ const REVALIDATE_SECONDS = 3600;
 export interface AcfProductFields {
   dimensions: DimensionItem[];
   specSheetUrl?: string;
+  /** Raw `belongs_to_model` value (mcdermotts-content plugin) — resolve with
+      lib/wp-content's resolveModelRef. */
+  modelRef?: unknown;
 }
 
 /* ACF text values arrive as the theme prints them ("82", "82cm", "82 cm").
@@ -52,8 +55,11 @@ export async function getAcfProductFields(slug: string): Promise<AcfProductField
         ? acf.spec_sheet
         : undefined;
 
-    if (dimensions.length === 0 && !specSheetUrl) return null;
-    return { dimensions, specSheetUrl };
+    /* ACF serialises an unset post_object as false/null — normalise to undefined. */
+    const modelRef = acf.belongs_to_model || undefined;
+
+    if (dimensions.length === 0 && !specSheetUrl && modelRef === undefined) return null;
+    return { dimensions, specSheetUrl, modelRef };
   } catch {
     return null;
   }
