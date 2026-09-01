@@ -150,6 +150,13 @@
   --ratio-product: 1 / 1;
   --ratio-editorial: 16 / 9;
   --ratio-hero: 4 / 3;
+  /* Desktop range-page hero only (Declan, 2026-08-27: "more landscape") —
+     --ratio-hero itself stays 4/3 for the mobile hero, which this doesn't
+     touch. A distinct token, not a reuse of --ratio-editorial (16/9 too,
+     coincidentally) — that one's EditorialCard's own intent, and tying two
+     unrelated components to the same value would just make one change
+     silently drag the other along with it later. */
+  --ratio-hero-wide: 16 / 9;
   --header-height: 96px;
   --tap-min: 44px;
 }

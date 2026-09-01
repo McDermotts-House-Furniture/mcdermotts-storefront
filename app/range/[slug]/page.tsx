@@ -380,7 +380,13 @@ export default async function LandingPageRoute({ params }: LandingProps) {
           paddingRight: "var(--section-pad-x)",
         }}
       >
-        <div className="grid items-center gap-[var(--grid-gap)] lg:grid-cols-2 lg:gap-16">
+        {/* lg:grid-cols-[2fr_3fr], not an even 2-column split (Declan,
+            2026-08-27: "more landscape... it can become larger than half
+            the container size if needed") — a wider aspect ratio at the
+            old 50% column width just made the image shorter, not more
+            impactful; giving it 60% of the row instead keeps it a real
+            presence at the new ratio. */}
+        <div className="grid items-center gap-[var(--grid-gap)] lg:grid-cols-[2fr_3fr] lg:gap-16">
           {/* Text first in markup = left column; image second = right. */}
           <div>
             <Breadcrumbs className="mb-6" items={[{ label: "Home", href: "/" }, { label: page.title }]} />
@@ -392,13 +398,13 @@ export default async function LandingPageRoute({ params }: LandingProps) {
               {page.standfirst}
             </p>
           </div>
-          <div className="relative aspect-[var(--ratio-hero)] overflow-hidden rounded-md bg-stone">
+          <div className="relative aspect-[var(--ratio-hero-wide)] overflow-hidden rounded-md bg-stone">
             <Image
               src={page.heroImage}
               alt={page.heroAlt}
               fill
               priority
-              sizes="(min-width: 1024px) 50vw, 100vw"
+              sizes="(min-width: 1024px) 60vw, 100vw"
               className="object-cover"
             />
           </div>
