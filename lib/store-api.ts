@@ -49,6 +49,14 @@ export interface StoreApiAttribute {
 
 export interface StoreApiProduct {
   id: number;
+  /** Parent product id — 0 for anything that isn't itself a variation.
+      A variation's own is_in_stock/stock_availability below are useless
+      for telling "genuinely tracked, in stock" apart from "stock never
+      tracked at all" (see lib/wc-admin's getStockInfo); this is what lets
+      that authenticated lookup find the variation's real parent, since
+      wc/v3 nests variations under it rather than addressing them flatly
+      like the Store API does. */
+  parent: number;
   name: string;
   slug: string;
   permalink: string;
@@ -243,7 +251,16 @@ export async function getProductBySlug(slug: string): Promise<StoreApiProduct | 
   url.searchParams.set("slug", slug);
   const res = await storeApiFetch(url.toString());
   const products = (await res.json()) as StoreApiProduct[];
-  return products[0] ? normalizeProduct(products[0]) : null;
+  /* The Store API's slug filter can also match a single child variation post
+     whose own post_name collides with its parent's (Declan, 2026-09-01: Mack
+     Chaise Sofa and Ivy Corner Sofa LHF by Orla Kiely both silently rendered
+     as plain, option-less products — every high-variation-count product we
+     checked had a stray `type: "variation"` entry sharing the parent's slug,
+     with 0 variations of its own, and it happened to sort first). A lone
+     variation is never the page a shopper should land on, so skip it and
+     prefer the real product regardless of API order. */
+  const product = products.find((p) => p.type !== "variation") ?? products[0];
+  return product ? normalizeProduct(product) : null;
 }
 
 export async function getCategories(): Promise<StoreApiCategory[]> {

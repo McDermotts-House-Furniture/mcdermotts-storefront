@@ -4,7 +4,7 @@ import { ProductCard } from "@/components/cards/ProductCard";
 import { Breadcrumbs } from "@/components/commerce/Breadcrumbs";
 import { SectionHeading } from "@/components/core/SectionHeading";
 import { COLLECTIONS, getCollection } from "@/lib/collection-data";
-import { getRangesByTags, type LandingPage } from "@/lib/landing-data";
+import { getRangesByTags, matchesShowroom, type LandingPage } from "@/lib/landing-data";
 import { getTag } from "@/lib/tags";
 
 /* Tag-driven collection page (sofa-section spec, §6). A collection is just
@@ -76,7 +76,10 @@ export default async function CollectionPage({ params }: CollectionPageProps) {
   const collection = getCollection(slug);
   if (!collection) notFound();
 
-  const ranges = getRangesByTags(collection.tags);
+  /* Showroom filter stacks on top of the tag query, not instead of it — a
+     collection can be both (e.g. corner sofas on display in Ennis), even
+     though the two collections built so far each only use one. */
+  const ranges = getRangesByTags(collection.tags).filter((r) => matchesShowroom(r, collection.showroom));
 
   return (
     <main>

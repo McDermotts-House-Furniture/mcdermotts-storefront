@@ -147,6 +147,14 @@ export function isRangeLive(page: LandingPage): boolean {
   return castlebar !== "not-on-display" || ennis !== "not-on-display";
 }
 
+/** For collection pages scoped to one showroom (2026-08-27: "only includes
+    sofas that are on display in ennis") — "on-display" specifically, not
+    "coming-soon"; a page about what's actually on the floor right now, not
+    what's arriving. No showroom filter (undefined) always matches. */
+export function matchesShowroom(page: LandingPage, showroom: "castlebar" | "ennis" | undefined): boolean {
+  return !showroom || page.showroomStatus?.[showroom] === "on-display";
+}
+
 const LANDING_PAGES: LandingPage[] = [
   {
     slug: "xtra-life-plus-1600-by-king-koil",

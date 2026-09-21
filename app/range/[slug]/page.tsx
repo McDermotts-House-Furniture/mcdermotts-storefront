@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound, redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import { ProductCard } from "@/components/cards/ProductCard";
 import { TrustPillar } from "@/components/cards/TrustPillar";
 import { Breadcrumbs } from "@/components/commerce/Breadcrumbs";
@@ -15,6 +16,7 @@ import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import { COLLECTIONS } from "@/lib/collection-data";
 import { getLandingPage, getLandingSlugs, isRangeLive, type LandingBlock, type LandingPage } from "@/lib/landing-data";
+import { optionsNoteFor } from "@/lib/merchandising";
 import { formatPrice, getProducts, isPermanentlyLow } from "@/lib/store-api";
 
 /* Where a not-live range's traffic goes (spec §5: "search engines and old
@@ -46,30 +48,35 @@ export async function generateMetadata({ params }: LandingProps): Promise<Metada
   return { title: page.title, description: page.standfirst };
 }
 
-async function ProductsBlock({
-  block,
-}: {
-  block: Extract<LandingBlock, { type: "products" }>;
-}) {
+/* Card wrapper for a block's own content — the "subtle segregation" (Declan,
+   2026-08-27: alternating full-width background colours and a hard border
+   between every block "doesn't look good"; reset to this instead). One
+   white panel per data/detail block, sitting on the page's own consistent
+   stone background, framed by a hairline border and a soft shadow rather
+   than a colour swap or a ruled line. Not used for editorial (it's lead
+   copy, not a data panel), the gallery/video (full-bleed media reads better
+   than boxed-and-padded), the product grid (each ProductCard is already its
+   own card) or the quote form (RangeEnquiryForm already renders its own
+   white card — wrapping it again would be a card inside a card). */
+function ContentCard({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div
+      className={`rounded-md border border-hairline bg-surface-card p-8 shadow-card${className ? ` ${className}` : ""}`}
+    >
+      {children}
+    </div>
+  );
+}
+
+async function ProductsBlock({ block }: { block: Extract<LandingBlock, { type: "products" }> }) {
   const { products } = await getProducts({ search: block.search, perPage: 8 });
   if (products.length === 0) return null;
   return (
-    <SectionBlock
-      tone="stone"
-      /* Tighter top and bottom (Declan, 2026-08-26) — this block wasn't
-         even on the "tight" preset (clamp 56-112px, more than every
-         neighbour), so it was the single biggest contributor to how far
-         apart Closer Detail and Request a Quote read on either side of it. */
-      style={{ paddingTop: "20px", paddingBottom: "20px" }}
-    >
+    <SectionBlock tone="stone" tight>
       <Reveal>
         <SectionHeading title={block.title} standfirst={block.standfirst} />
       </Reveal>
       <Reveal order={2}>
-        {/* mt-4, not --section-gap-title — same fix as elsewhere on this
-            page: the block's own top padding is trimmed to 20px, so the
-            wider gap read as "Buy online" belonging to Closer Detail above
-            it rather than its own product grid (Declan, 2026-08-26). */}
         <ul
           /* auto-fill, not auto-fit (Declan, 2026-08-27) — auto-fit collapses
              the empty tracks a short row leaves behind and lets the real
@@ -80,15 +87,16 @@ async function ProductsBlock({
              keeps those tracks around unfilled, so a card is always sized
              off minmax(240px, 1fr) against the grid, never against how many
              siblings happen to be in it. */
-          className="mt-4 grid list-none grid-cols-2 p-0 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]"
+          className="grid list-none grid-cols-2 p-0 sm:grid-cols-[repeat(auto-fill,minmax(240px,1fr))]"
           style={{ gap: "var(--grid-gap)" }}
         >
           {products.map((p) => {
-            /* Sale styling (badge + red price) is tag/category-driven, not
-               on_sale — a product not tagged permanently-low always reads
-               as on sale (Declan, 2026-08-27). Whether there's an actual
-               struck-through old price to show stays data-driven; you can't
-               show a discount that doesn't exist. */
+            /* isPermanentlyLow, not on_sale, decides ELIGIBILITY for sale
+               styling (Declan, 2026-08-27) — but ProductCard itself now
+               also requires a genuine `oldPrice` before it'll actually show
+               red or a Sale badge (Declan, 2026-09-06: "only ever a sale
+               price if there is a higher price, and a lower price"), so
+               `hasMarkdown` below still has to be real, data-driven. */
             const onSale = !isPermanentlyLow(p);
             const hasMarkdown = p.on_sale && p.prices.regular_price !== p.prices.price;
             return (
@@ -102,6 +110,7 @@ async function ProductsBlock({
                   onSale={onSale}
                   price={formatPrice(p.prices.price, p.prices)}
                   oldPrice={hasMarkdown ? formatPrice(p.prices.regular_price, p.prices) : undefined}
+                  optionsNote={optionsNoteFor(p)}
                   sizes="(max-width: 767px) 50vw, 25vw"
                 />
               </li>
@@ -113,32 +122,17 @@ async function ProductsBlock({
   );
 }
 
-function renderBlock(block: LandingBlock, index: number, isFirst: boolean, page: LandingPage) {
+function renderBlock(block: LandingBlock, index: number, page: LandingPage) {
   switch (block.type) {
     case "editorial":
       return (
-        <SectionBlock
-          key={index}
-          tone="linen"
-          tight
-          /* The very first block on the page also gets a reduced top
-             padding (Declan, 2026-08-26) — SectionBlock's own tight preset
-             (clamp 40-72px) is the right gap between two content blocks,
-             but it left too much space between the compact status-line
-             divider above and the actual first paragraph. A `style`
-             override, not a competing className: two py-* utility classes
-             have equal specificity, so the later one in the stylesheet
-             wins, not the later one in the class list — unreliable. Inline
-             style always wins. Bottom padding trimmed unconditionally too,
-             for the gap to the gallery ("A closer look") below it. */
-          style={{ paddingTop: isFirst ? "20px" : undefined, paddingBottom: "20px" }}
-        >
+        <SectionBlock key={index} tone="stone" tight>
           <Reveal>
             {block.title && <SectionHeading title={block.title} />}
             {block.paragraphs.map((p) => (
               <p
                 key={p.slice(0, 24)}
-                className="mt-4 max-w-[var(--measure-lead)] text-[length:var(--fs-lead)] leading-[var(--lh-lead)]"
+                className="mt-4 max-w-[var(--measure-lead)] text-[length:var(--fs-lead)] leading-[var(--lh-lead)] first:mt-0"
               >
                 {p}
               </p>
@@ -148,129 +142,84 @@ function renderBlock(block: LandingBlock, index: number, isFirst: boolean, page:
       );
     case "features":
       return (
-        <SectionBlock
-          key={index}
-          tone="linen"
-          tight
-          /* Reduced top AND bottom padding (Declan, 2026-08-26): this block
-             sits between the gallery above and Detail below, and both of
-             those gaps read as too loose — SectionBlock's own tight preset
-             padding stacks on both sides of every boundary (padding doesn't
-             collapse like margin does), so trimming just this one block
-             tightens both neighbouring gaps at once. */
-          style={{ paddingTop: "20px", paddingBottom: "20px" }}
-        >
+        <SectionBlock key={index} tone="stone" tight>
           <Reveal>
             <SectionHeading title={block.title} />
           </Reveal>
-          {/* mt-2, not --section-gap-title (28-48px) — that gap is right
-              between two distinct blocks, but reads as too loose between a
-              block's own heading and its own content directly beneath it.
-              Tightened once already to mt-4, then further to mt-2
-              (Declan, 2026-08-26). */}
           <Reveal order={2}>
-            <ul className="mt-2 grid list-none grid-cols-1 gap-[var(--grid-gap)] p-0 sm:grid-cols-2 lg:grid-cols-4">
-              {block.items.map((item) => (
-                <li key={item.title}>
-                  <TrustPillar title={item.title} body={item.body} />
-                </li>
-              ))}
-            </ul>
+            <ContentCard>
+              <ul className="m-0 grid list-none grid-cols-1 gap-[var(--grid-gap)] p-0 sm:grid-cols-2 lg:grid-cols-4">
+                {block.items.map((item) => (
+                  <li key={item.title}>
+                    <TrustPillar title={item.title} body={item.body} />
+                  </li>
+                ))}
+              </ul>
+              {/* Right where the copy usually references it ("Check the
+                  specifications sheet…"), inside the same panel as the
+                  features it's actually documenting, not floated
+                  separately below it. */}
+              {page.specSheetUrl && (
+                <a
+                  href={page.specSheetUrl}
+                  className="mt-6 inline-flex min-h-[var(--tap-min)] items-center gap-2 rounded-full border border-hairline bg-stone px-5 text-[length:var(--fs-small)] font-bold text-ink no-underline transition-colors duration-[var(--dur-base)] hover:border-ink hover:bg-white"
+                >
+                  <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
+                    <path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />
+                  </svg>
+                  See the specifications sheet (PDF)
+                </a>
+              )}
+            </ContentCard>
           </Reveal>
-          {/* Right where the copy usually references it ("Check the
-              specifications sheet…"), not buried elsewhere on the page.
-              A bordered pill with an icon, not a plain text link (Declan,
-              2026-08-26: "more obvious, but not obtrusive") — visually
-              distinct enough to actually notice at a glance, but a quiet
-              outlined chip rather than a solid Button, so it doesn't
-              compete with the real call to action further down the page
-              ("Get a quote"). */}
-          {page.specSheetUrl && (
-            <Reveal order={3}>
-              <a
-                href={page.specSheetUrl}
-                className="mt-4 inline-flex min-h-[var(--tap-min)] items-center gap-2 rounded-full border border-hairline bg-white px-5 text-[length:var(--fs-small)] font-bold text-ink no-underline transition-colors duration-[var(--dur-base)] hover:border-ink hover:bg-stone"
-              >
-                <svg aria-hidden width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.75" strokeLinecap="round" strokeLinejoin="round">
-                  <path d="M12 3v12m0 0-4-4m4 4 4-4M4 21h16" />
-                </svg>
-                See the specifications sheet (PDF)
-              </a>
-            </Reveal>
-          )}
         </SectionBlock>
       );
     case "specs":
       return (
-        <SectionBlock key={index} tone="linen" tight style={{ paddingTop: "20px", paddingBottom: "20px" }}>
+        <SectionBlock key={index} tone="stone" tight>
           <Reveal>
             <SectionHeading title={block.title} />
-            {/* mt-4, not --section-gap-title — same fix as Key Features and
-                the gallery: the block's own top padding is trimmed to 20px,
-                so the wider gap was reading as "Closer Detail" belonging to
-                Key Features above it rather than its own content
-                (Declan, 2026-08-26). */}
-            <SpecList className="mt-4 max-w-[var(--container-narrow)]" items={block.items} />
+          </Reveal>
+          <Reveal order={2}>
+            <ContentCard>
+              <SpecList className="max-w-[var(--container-narrow)]" items={block.items} />
+            </ContentCard>
           </Reveal>
         </SectionBlock>
       );
     case "gallery":
       return (
-        <SectionBlock
-          key={index}
-          tone="stone"
-          tight
-          /* Top trimmed to close the gap up to whatever sits above it
-             (editorial copy, or a video block — order varies per range);
-             bottom already trimmed for the gap down to Key Features
-             (Declan, 2026-08-26). */
-          style={{ paddingTop: "20px", paddingBottom: "20px" }}
-        >
+        <SectionBlock key={index} tone="stone" tight>
           <Reveal>
             {block.title && <SectionHeading title={block.title} />}
-            {/* mt-4, not --section-gap-title — same reasoning as Key
-                Features below: with the block's own top padding trimmed to
-                20px, the wider title-to-content gap was making "A closer
-                look" read as closer to the paragraph above it than to its
-                own gallery (Declan, 2026-08-26). */}
-            <div className={block.title ? "mt-4" : undefined}>
-              <SlidingGallery images={block.images} />
-            </div>
+          </Reveal>
+          <Reveal order={2}>
+            <SlidingGallery images={block.images} />
           </Reveal>
         </SectionBlock>
       );
     case "video":
       return (
-        <SectionBlock
-          key={index}
-          tone="stone"
-          tight
-          /* Same "stone" tone as the gallery block (Declan, 2026-08-27: real
-             showroom footage, same idea as the photo gallery, just moving)
-             so the two flow as one visual section wherever they end up
-             adjacent, rather than reading as separate ones. Padding matches
-             the rhythm of its neighbours either side. */
-          style={{ paddingTop: "20px", paddingBottom: "20px" }}
-        >
+        <SectionBlock key={index} tone="stone" tight>
           <Reveal>
             {block.title && <SectionHeading title={block.title} />}
-            <div className={block.title ? "mt-4" : undefined}>
-              {/* youtube-nocookie.com, not youtube.com — doesn't set
-                  tracking cookies until the visitor actually presses play. */}
-              <div className="mx-auto aspect-video w-full max-w-[var(--container-narrow)] overflow-hidden rounded-md bg-ink">
-                <iframe
-                  className="h-full w-full"
-                  src={`https://www.youtube-nocookie.com/embed/${block.youtubeId}`}
-                  title={block.caption ?? `${page.title} in the McDermott's showroom`}
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
-                  allowFullScreen
-                  loading="lazy"
-                />
-              </div>
-              {block.caption && (
-                <p className="mt-3 text-[length:var(--fs-micro)] text-ink-soft">{block.caption}</p>
-              )}
+          </Reveal>
+          <Reveal order={2}>
+            {/* youtube-nocookie.com, not youtube.com — doesn't set tracking
+                cookies until the visitor actually presses play. */}
+            <div className="mx-auto aspect-video w-full max-w-[var(--container-narrow)] overflow-hidden rounded-md bg-ink">
+              <iframe
+                className="h-full w-full"
+                src={`https://www.youtube-nocookie.com/embed/${block.youtubeId}`}
+                title={block.caption ?? `${page.title} in the McDermott's showroom`}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                allowFullScreen
+                loading="lazy"
+              />
             </div>
+            {block.caption && (
+              <p className="mt-3 text-[length:var(--fs-micro)] text-ink-soft">{block.caption}</p>
+            )}
           </Reveal>
         </SectionBlock>
       );
@@ -308,7 +257,7 @@ function renderBlock(block: LandingBlock, index: number, isFirst: boolean, page:
       );
     case "quoteForm":
       return (
-        <SectionBlock key={index} tone="stone" tight style={{ paddingTop: "20px" }}>
+        <SectionBlock key={index} tone="stone" tight>
           <Reveal>
             <SectionHeading title={block.title} standfirst={block.standfirst} />
           </Reveal>
@@ -323,7 +272,7 @@ function renderBlock(block: LandingBlock, index: number, isFirst: boolean, page:
                  the form's hidden fields; the conservative one that never
                  claims a showroom has it. */
               showroomStatus={page.showroomStatus ?? { castlebar: "not-on-display", ennis: "not-on-display" }}
-              className="mt-4 max-w-[var(--container-narrow)]"
+              className="max-w-[var(--container-narrow)]"
             />
           </Reveal>
         </SectionBlock>
@@ -444,7 +393,7 @@ export default async function LandingPageRoute({ params }: LandingProps) {
           into, and pulling the block stack up regardless would overlap it
           into the hero instead. */}
       <div className={page.showroomStatus ? "-mt-8" : undefined}>
-        {page.blocks.map((block, i) => renderBlock(block, i, i === 0, page))}
+        {page.blocks.map((block, i) => renderBlock(block, i, page))}
       </div>
     </main>
   );

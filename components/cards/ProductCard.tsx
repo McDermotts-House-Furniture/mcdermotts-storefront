@@ -18,11 +18,24 @@ export interface ProductCardProps {
   price?: string;
   /** Formatted pre-sale price, struck through beside `price`. */
   oldPrice?: string;
+  /** "N colours" / "N options" — shown for a variable product with more
+      than one real choice (lib/merchandising.ts's optionsNoteFor), so a
+      shopper browsing the grid can see more options exist without opening
+      the product. */
+  optionsNote?: string;
   /** Product or range page; internal paths ("/...") use next/link. */
   href?: string;
   image?: string;
   alt?: string;
-  /** Gold sale badge — only while a sale is running. */
+  /** Whether the product is ELIGIBLE for sale styling — not, by itself,
+      proof that this card IS one: when `price` is shown, this only takes
+      effect alongside a genuine `oldPrice` (Declan, 2026-09-06: "it is
+      only ever a sale price if there is a higher price, and a lower
+      price... when there is only one price just keep it black"). The
+      homepage's descriptor cards (no `price` at all) have no price to be
+      genuine or not about, so there `onSale` alone still drives the
+      ribbon exactly as before — that's a sitewide marketing toggle
+      (SaleToggle), not a per-product discount. */
   onSale?: boolean;
   /** Skip lazy-loading for cards above the fold. */
   eager?: boolean;
@@ -62,6 +75,7 @@ export function ProductCard({
   descriptor,
   price,
   oldPrice,
+  optionsNote,
   href = "#",
   image,
   alt = "",
@@ -70,6 +84,12 @@ export function ProductCard({
   sizes = "(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 100vw",
   className,
 }: ProductCardProps) {
+  /* Only the price variant has an actual discount to be honest about — the
+     descriptor variant (homepage TopPicks) never receives a price/oldPrice
+     pair at all, so `onSale` there is left to mean whatever its caller
+     intends (the sitewide Summer Sale ribbon toggle, unrelated to any one
+     product's real pricing) exactly as before. */
+  const genuineSale = price ? Boolean(onSale) && Boolean(oldPrice) : onSale;
   return (
     <article className={`flex flex-col gap-4${className ? ` ${className}` : ""}`}>
       <CardLink
@@ -86,7 +106,7 @@ export function ProductCard({
             className="object-cover transition-transform duration-[var(--dur-slow)] ease-out group-hover:scale-[1.035]"
           />
         ) : null}
-        {onSale ? (
+        {genuineSale ? (
           <span className="absolute top-3 left-3">
             <Badge>Sale</Badge>
           </span>
@@ -119,10 +139,12 @@ export function ProductCard({
         </div>
         {price ? (
           <p className="m-0 text-[length:var(--fs-small)] leading-[var(--lh-body)]">
-            {/* Red, not text-ink, whenever onSale (Declan, 2026-08-27) —
-                driven by lib/store-api's isPermanentlyLow at the call site,
-                not raw on_sale; see there for why. */}
-            <span className={`font-bold ${onSale ? "text-red" : "text-ink"}`}>{price}</span>
+            {/* Red, not text-ink, only when genuineSale — isPermanentlyLow
+                (the call site's `onSale`) says whether this product is
+                ELIGIBLE for sale styling, but eligibility alone isn't a
+                discount: a single price with nothing above it to strike
+                through is never a "sale price" (Declan, 2026-09-06). */}
+            <span className={`font-bold ${genuineSale ? "text-red" : "text-ink"}`}>{price}</span>
             {oldPrice ? (
               <span className="ml-2 text-ink-soft line-through">{oldPrice}</span>
             ) : null}
@@ -132,6 +154,11 @@ export function ProductCard({
             {descriptor}
           </p>
         )}
+        {optionsNote ? (
+          <p className="m-0 text-[length:var(--fs-micro)] uppercase tracking-eyebrow text-ink-soft">
+            {optionsNote}
+          </p>
+        ) : null}
       </div>
     </article>
   );

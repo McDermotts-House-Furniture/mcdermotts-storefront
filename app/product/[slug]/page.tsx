@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import { Fragment } from "react";
 import { notFound } from "next/navigation";
 import { StarRating } from "@/components/brand/StarRating";
 import { TrustPillar } from "@/components/cards/TrustPillar";
@@ -9,6 +10,7 @@ import { BuyControls } from "@/components/commerce/BuyControls";
 import { DeliveryNotice } from "@/components/commerce/DeliveryNotice";
 import { DimensionSet, type DimensionItem } from "@/components/commerce/DimensionSet";
 import { Price } from "@/components/commerce/Price";
+import { ProductEnquiryForm } from "@/components/commerce/ProductEnquiryForm";
 import { ProductGallery } from "@/components/commerce/ProductGallery";
 import { ProductStage } from "@/components/commerce/ProductStage";
 import { RangeLink } from "@/components/commerce/RangeLink";
@@ -22,9 +24,9 @@ import { getAcfProductFields } from "@/lib/acf";
 import { resolveModelRef } from "@/lib/wp-content";
 import { decodeEntities } from "@/lib/html";
 import { getSwatchImages } from "@/lib/swatches";
-import { getDefaultAttributes } from "@/lib/wc-admin";
+import { describeStock, getDefaultAttributes, getStockInfo } from "@/lib/wc-admin";
 import { homepage } from "@/lib/homepage-data";
-import { deliveryNoticesFor, rangeLinksFor } from "@/lib/merchandising";
+import { deliveryNoticesFor, optionsNoteFor, rangeLinksFor } from "@/lib/merchandising";
 import { sanitizeProductHtml } from "@/lib/sanitize";
 import {
   formatPrice,
@@ -122,6 +124,10 @@ export default async function ProductPage({ params }: ProductPageProps) {
   const modelRef = acf?.modelRef ? await resolveModelRef(acf.modelRef) : null;
   const defaultSelection = isVariable ? await getDefaultAttributes(product.id) : null;
   const swatchMap = isVariable ? await getSwatchImages(product.permalink) : null;
+  /* Variable products resolve their own per-variation stock inside
+     VariablePurchase (one variation at a time, via /api/variation); a
+     simple product has just the one to check, here. */
+  const stock = isVariable ? null : describeStock(await getStockInfo(product.id));
 
   const related = primaryCategory
     ? (await getProducts({ category: primaryCategory.id, perPage: 5 })).products
@@ -136,7 +142,15 @@ export default async function ProductPage({ params }: ProductPageProps) {
   }));
 
   const infoHeader = (
-    <>
+    /* Explicit Fragment + key (not the <>...</> shorthand, which can't take
+       props) — this same element is threaded through both PDP branches
+       (straight into ProductStage here, or via VariablePurchase's prop),
+       always landing as one of several literal children under
+       ProductStage; giving it (and the other shared blocks below) a stable
+       key up front avoids "Each child in a list should have a unique key
+       prop" (Declan, 2026-09-01) rather than relying on each call site to
+       remember to key it. */
+    <Fragment key="info-header">
       {brand && <EyebrowLabel>{brand}</EyebrowLabel>}
       <h1
         className="mt-2 uppercase"
@@ -157,18 +171,19 @@ export default async function ProductPage({ params }: ProductPageProps) {
           </span>
         </div>
       )}
-    </>
+    </Fragment>
   );
 
   const shortDescription = product.short_description ? (
     <div
+      key="short-description"
       className="mt-6 max-w-[var(--measure-body)] [&_img]:hidden [&_p]:mt-2"
       dangerouslySetInnerHTML={{ __html: sanitizeProductHtml(product.short_description) }}
     />
   ) : undefined;
 
   const footNote = (
-    <p className="mt-6 max-w-[var(--measure-body)] text-[length:var(--fs-small)] text-ink-soft">
+    <p key="foot-note" className="mt-6 max-w-[var(--measure-body)] text-[length:var(--fs-small)] text-ink-soft">
       Delivered and assembled by our own crews — one contribution fee, no surprise charges
       on the day.
     </p>
@@ -177,7 +192,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
   /* Shared by both branches — variable products have dimensions too. */
   const dimensionsNode =
     dimensions.length > 0 || acf?.specSheetUrl ? (
-      <div className="mt-8">
+      <div key="dimensions" className="mt-8">
         {dimensions.length > 0 && <DimensionSet items={dimensions} />}
         {acf?.specSheetUrl && (
           <div className="mt-3">
@@ -189,7 +204,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   /* Delivery notices stack in theme-rule order (tag-driven, lib/merchandising). */
   const deliveryStack = (
-    <div className="mt-8 grid gap-5">
+    <div key="delivery-stack" className="mt-8 grid gap-5">
       {deliveryNotices.map((notice) => (
         <DeliveryNotice key={notice.title + (notice.body ?? "")} {...notice} />
       ))}
@@ -198,7 +213,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
 
   /* RangeLinks + the accordion stack — everything after the buy area (kit order). */
   const detailExtras = (
-    <>
+    <Fragment key="detail-extras">
       {modelRef && (
         <RangeLink
           className="mt-8"
@@ -240,8 +255,27 @@ export default async function ProductPage({ params }: ProductPageProps) {
           packaging. Made-to-order pieces are the exception — we&apos;ll say so clearly
           before you order.
         </Accordion>
+        {/* Every product page, not just range pages — RangeEnquiryForm is
+            the full quote form on a range page, this is the lighter version
+            (Declan, 2026-08-27: "a query form that sends an email back —
+            like the query form in the sofa collection pages but not with so
+            much detail... only needed is name, email address, phone number,
+            delivery location and a question box"). Client-side only, same
+            as every other form on this site so far — confirmed with Declan,
+            not wired to a real backend yet. */}
+        <Accordion title="Have a question?">
+          <p className="m-0">
+            Ask us anything about this piece — sizing, fabric, delivery, whatever you need to
+            know before you order. Or ring Castlebar direct on{" "}
+            <a href="tel:0949022500" className="text-ink underline hover:text-gold-deep">
+              094 90 22500
+            </a>
+            .
+          </p>
+          <ProductEnquiryForm productName={product.name} pageUrl={`/product/${product.slug}`} className="mt-5" />
+        </Accordion>
       </div>
-    </>
+    </Fragment>
   );
 
   return (
@@ -259,8 +293,13 @@ export default async function ProductPage({ params }: ProductPageProps) {
           paddingRight: "var(--section-pad-x)",
         }}
       >
+        {/* Full trail on desktop; mobile drops to just the immediate parent
+            category (Declan, 2026-09-02, "Gallery sizing" — every bit of
+            height above the gallery counts toward the swatches staying on
+            screen) — "Home" and the product name (already the H1 right
+            below) add nothing a shopper needs on the way back up. */}
         <Breadcrumbs
-          className="mb-8"
+          className="mb-8 hidden lg:block"
           items={[
             { label: "Home", href: "/" },
             ...(primaryCategory
@@ -272,6 +311,14 @@ export default async function ProductPage({ params }: ProductPageProps) {
                 ]
               : []),
             { label: product.name },
+          ]}
+        />
+        <Breadcrumbs
+          className="mb-4 lg:hidden"
+          items={[
+            primaryCategory
+              ? { label: decodeEntities(primaryCategory.name), href: `/category/${primaryCategory.slug}` }
+              : { label: "Home", href: "/" },
           ]}
         />
 
@@ -302,16 +349,26 @@ export default async function ProductPage({ params }: ProductPageProps) {
           <ProductStage media={<ProductGallery images={galleryImages} name={product.name} />}>
             {infoHeader}
             <Price
+              key="price"
               className="mt-5"
               current={price.current}
               old={price.old}
               from={price.isRange}
               onSale={!isPermanentlyLow(product)}
             />
+            {/* Skipped when it isn't a managed, really-tracked reading — the
+                delivery notice stack below already covers "non-stock order"
+                for the whole product, so this line would just repeat it
+                (Declan, 2026-09-06). */}
+            {stock?.managed && (
+              <p key="availability" className="mt-2 text-[length:var(--fs-small)] text-ink-soft">
+                {stock.text}
+              </p>
+            )}
             {shortDescription}
             {dimensionsNode}
             {deliveryStack}
-            <div className="mt-8">
+            <div key="buy-controls" className="mt-8">
               <BuyControls
                 item={{
                   productId: product.id,
@@ -321,7 +378,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                   image: product.images[0]?.src ?? "",
                   imageAlt: product.images[0]?.alt || product.name,
                 }}
-                inStock={product.is_in_stock}
+                inStock={stock?.inStock ?? product.is_in_stock}
                 name={product.name}
                 price={price.current}
                 oldPrice={price.old}
@@ -370,6 +427,7 @@ export default async function ProductPage({ params }: ProductPageProps) {
                       onSale={!isPermanentlyLow(p)}
                       price={rel.current}
                       oldPrice={rel.old}
+                      optionsNote={optionsNoteFor(p)}
                       sizes="(max-width: 767px) 100vw, (max-width: 1279px) 50vw, 25vw"
                     />
                   </li>

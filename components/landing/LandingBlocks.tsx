@@ -6,6 +6,7 @@ import { SectionHeading } from "@/components/core/SectionHeading";
 import { Reveal } from "@/components/layout/Reveal";
 import { SectionBlock } from "@/components/layout/SectionBlock";
 import type { LandingBlock } from "@/lib/landing-data";
+import { optionsNoteFor } from "@/lib/merchandising";
 import { formatPrice, getProducts } from "@/lib/store-api";
 
 /* Block renderer shared by every CMS-authored page type — landing pages
@@ -51,6 +52,7 @@ async function ProductsBlock({
                   onSale={onSale}
                   price={formatPrice(p.prices.price, p.prices)}
                   oldPrice={onSale ? formatPrice(p.prices.regular_price, p.prices) : undefined}
+                  optionsNote={optionsNoteFor(p)}
                   sizes="(max-width: 767px) 50vw, 25vw"
                 />
               </li>

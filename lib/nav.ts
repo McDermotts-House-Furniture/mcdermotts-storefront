@@ -44,6 +44,7 @@ const SOFA_MEGA_MENU: NavSection[] = [
       { label: "Recliner Collection", href: "/collection/recliner-collection" },
       { label: "Lift & Tilt Chairs", href: "/collection/lift-and-tilt-chairs" },
       { label: "Sofa Bed Collection", href: "/collection/sofa-bed-collection" },
+      { label: "Ennis Collection", href: "/collection/ennis-collection" },
     ],
   },
   {

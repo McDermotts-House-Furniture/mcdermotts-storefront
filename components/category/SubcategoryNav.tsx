@@ -146,7 +146,12 @@ export function SubcategoryNav({ items }: { items: SubcategoryLink[] }) {
       {!atEnd && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-stone to-transparent"
+          /* from-surface-page, not from-stone — stale from before the
+             page background moved to #f5f5f3 (Declan, 2026-08-27); the
+             fade needs to match whatever's actually behind it, same fix
+             already made on SlidingGallery and ProductGallery's own
+             edge-fades. */
+          className="pointer-events-none absolute inset-y-0 right-0 w-12 bg-gradient-to-l from-surface-page to-transparent"
         />
       )}
     </nav>

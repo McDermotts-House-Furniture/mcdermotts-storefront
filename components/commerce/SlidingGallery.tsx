@@ -206,16 +206,20 @@ export function SlidingGallery({ images }: { images: SlidingGalleryImage[] }) {
         ))}
       </ul>
 
+      {/* from-surface-page, not from-stone (2026-08-27) — this fades to
+          whatever the page background actually is; it went stale the
+          moment --surface-page stopped being Stone (#f5f5f3 now), which is
+          exactly why it's the token, not the literal colour, here. */}
       {!atStart && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-stone from-10% via-stone/80 via-40% to-transparent sm:w-28"
+          className="pointer-events-none absolute inset-y-0 left-0 w-20 bg-gradient-to-r from-surface-page from-10% via-surface-page/80 via-40% to-transparent sm:w-28"
         />
       )}
       {!atEnd && (
         <div
           aria-hidden
-          className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-stone from-10% via-stone/80 via-40% to-transparent sm:w-28"
+          className="pointer-events-none absolute inset-y-0 right-0 w-20 bg-gradient-to-l from-surface-page from-10% via-surface-page/80 via-40% to-transparent sm:w-28"
         />
       )}
 

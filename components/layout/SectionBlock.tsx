@@ -19,10 +19,14 @@ export interface SectionBlockProps {
   style?: CSSProperties;
 }
 
+/* linen/stone both resolve to the page's own bg-surface-page (2026-08-27
+   test: currently Linen, was Stone — see globals.css) — "white" is the
+   card-surface token instead, not literal white, so it moves with the same
+   test. */
 const tones: Record<NonNullable<SectionBlockProps["tone"]>, string> = {
-  linen: "bg-stone text-ink",
-  stone: "bg-stone text-ink",
-  white: "bg-white text-ink",
+  linen: "bg-surface-page text-ink",
+  stone: "bg-surface-page text-ink",
+  white: "bg-surface-card text-ink",
   dark: "bg-dark text-on-dark",
   darkest: "bg-darker text-on-dark",
 };

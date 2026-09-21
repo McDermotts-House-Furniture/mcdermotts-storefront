@@ -50,7 +50,7 @@ export function ShowroomCard({
 }: ShowroomCardProps) {
   return (
     <article
-      className={`flex flex-col gap-4 rounded-md border border-hairline bg-white p-8 shadow-card${
+      className={`flex flex-col gap-4 rounded-md border border-hairline bg-surface-card p-8 shadow-card${
         className ? ` ${className}` : ""
       }`}
     >

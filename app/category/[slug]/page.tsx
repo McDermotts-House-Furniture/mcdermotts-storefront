@@ -6,6 +6,7 @@ import { Pagination } from "@/components/category/Pagination";
 import { SortSelect } from "@/components/category/SortSelect";
 import { SubcategoryNav } from "@/components/category/SubcategoryNav";
 import { SectionHeading } from "@/components/core/SectionHeading";
+import { optionsNoteFor } from "@/lib/merchandising";
 import {
   formatPrice,
   getCategories,
@@ -71,11 +72,16 @@ function parseSort(raw: string | undefined): ProductSort {
   return "popularity";
 }
 
-/* Whether to show a struck-through old price is still on_sale-driven — you
-   can't strike through a discount that doesn't exist in the data. The Sale
-   badge and red current-price colour are a separate question, gated on
-   isPermanentlyLow instead (see the ProductCard call below): a product not
-   tagged permanently-low always reads as on sale, on_sale flag or not. */
+/* The struck-through old price is on_sale-driven — you can't strike
+   through a discount that doesn't exist in the data. isPermanentlyLow
+   (passed as `onSale` on the ProductCard call below) only ever narrows
+   this further, excluding a permanently-low product from sale styling
+   even when it happens to carry one; ProductCard itself now also requires
+   this `oldPrice` to actually be set before it'll show red or a Sale
+   badge at all (Declan, 2026-09-06: "it is only ever a sale price if
+   there is a higher price, and a lower price... when there is only one
+   price just keep it black") — isPermanentlyLow alone is no longer
+   enough. */
 function cardPrices(product: StoreApiProduct): { price: string; oldPrice?: string } {
   const { prices } = product;
   if (product.on_sale && prices.regular_price !== prices.price) {
@@ -175,6 +181,7 @@ export default async function CategoryPage({ params, searchParams }: CategoryPag
                 onSale={!isPermanentlyLow(product)}
                 eager={i < 3 && page === 1}
                 sizes="(max-width: 767px) 100vw, (max-width: 1023px) 50vw, 33vw"
+                optionsNote={optionsNoteFor(product)}
                 {...cardPrices(product)}
               />
             </li>

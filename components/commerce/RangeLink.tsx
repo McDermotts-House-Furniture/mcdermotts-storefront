@@ -19,7 +19,10 @@ export function RangeLink({
   return (
     <Link
       href={href}
-      className={`group flex min-h-[var(--tap-min)] items-center justify-between gap-6 rounded-md border border-hairline bg-stone px-6 py-5 no-underline transition-[background-color,box-shadow] duration-[var(--dur-base)] hover:bg-white hover:shadow-card-hover ${className ?? ""}`}
+      /* hover:bg-surface-page, not hover:bg-white (Declan, 2026-08-27) —
+         #f5f5f3, the same token the page background itself now uses, not a
+         second, unrelated white. */
+      className={`group flex min-h-[var(--tap-min)] items-center justify-between gap-6 rounded-md border border-hairline bg-stone px-6 py-5 no-underline transition-[background-color,box-shadow] duration-[var(--dur-base)] hover:bg-surface-page hover:shadow-card-hover ${className ?? ""}`}
     >
       <span className="flex min-w-0 flex-col gap-2">
         <span className="text-[length:var(--fs-micro)] font-bold uppercase tracking-eyebrow text-gold-deep">

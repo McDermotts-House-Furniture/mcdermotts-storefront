@@ -9,6 +9,10 @@
   --mcd-linen: #f6f3ed;
   --mcd-stone: #eae4d9;
   --mcd-white: #ffffff;
+  /* Page background, given directly by Declan (2026-08-27) — its own named
+     primitive, same convention as linen/stone, rather than a bare literal
+     wherever --surface-page is used. */
+  --mcd-page: #f5f5f3;
   --mcd-ink: #211d17;
   --mcd-ink-soft: #5b554a;
   --mcd-dark: #1c1a17;
@@ -26,9 +30,16 @@
   --mcd-scrim: rgba(16, 15, 13, 0.6);
 
   /* Semantic — surfaces */
-  --surface-page: var(--mcd-stone);
+  /* Page background is its own colour now, --mcd-page (2026-08-27), not
+     Stone or Linen — deliberately doesn't touch --mcd-stone/--mcd-white
+     themselves, or any of the ~25 other files that use bg-stone/bg-white
+     for unrelated chrome (buttons, inputs, badges); only the page
+     background and the three real card surfaces (ShowroomCard, the range
+     page's ContentCard, RangeEnquiryForm) read these two tokens. Cards stay
+     Stone from the last test — only the page background changed here. */
+  --surface-page: var(--mcd-page);
   --surface-alt: var(--mcd-stone);
-  --surface-card: var(--mcd-white);
+  --surface-card: var(--mcd-stone);
   --surface-dark: var(--mcd-dark);
   --surface-darkest: var(--mcd-darker);
 
@@ -177,6 +188,12 @@
   --color-on-dark: var(--mcd-linen);
   --color-on-dark-muted: var(--mcd-white-70);
   --color-on-dark-border: var(--mcd-white-16);
+  /* Page background and card surface as their own tokens, not aliases for
+     bg-stone/bg-white (2026-08-27) — so the two can be tested against each
+     other without touching every other component that happens to also use
+     stone or white for something unrelated. */
+  --color-surface-page: var(--surface-page);
+  --color-surface-card: var(--surface-card);
 
   --font-sans: var(--font-stack);
 

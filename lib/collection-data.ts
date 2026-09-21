@@ -12,6 +12,11 @@ export interface CollectionDef {
   standfirst: string;
   /** Tags a range must carry ALL of to appear here. Empty = every live range (the hub). */
   tags: string[];
+  /** Showroom filter, applied on top of tags (not instead of) — "on-display"
+      in this specific showroom, not "coming-soon" (2026-08-27: "sofas that
+      are on display in ennis"). Most collections don't set this; it's for
+      the two showroom-specific pages. */
+  showroom?: "castlebar" | "ennis";
 }
 
 export const COLLECTIONS: CollectionDef[] = [
@@ -56,6 +61,14 @@ export const COLLECTIONS: CollectionDef[] = [
     title: "Sofa Bed Collection",
     standfirst: "Ranges that convert to a bed — for a spare room, a small home, or a house that hosts at Christmas.",
     tags: ["sofa-bed"],
+  },
+  {
+    slug: "ennis-collection",
+    eyebrow: "Collection",
+    title: "Ennis Collection",
+    standfirst: "Every sofa range currently on display in our Ennis showroom.",
+    tags: [],
+    showroom: "ennis",
   },
   {
     slug: "fama",

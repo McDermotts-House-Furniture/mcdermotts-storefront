@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getLiveRanges, getRangesByTags, isRangeLive, type LandingPage } from "./landing-data";
+import { getLiveRanges, getRangesByTags, isRangeLive, matchesShowroom, type LandingPage } from "./landing-data";
 import { getTag, TAGS } from "./tags";
 import { COLLECTIONS } from "./collection-data";
 
@@ -37,6 +37,48 @@ describe("isRangeLive", () => {
 
   it("is live when showroomStatus is entirely absent (a WP page with no ACF field for it yet) — exempt from the gate, not treated as both-not-on-display", () => {
     expect(isRangeLive(page({ showroomStatus: undefined }))).toBe(true);
+  });
+});
+
+describe("matchesShowroom", () => {
+  it("real data: matchesShowroom itself is tag-agnostic — Xtra Life Plus (a mattress, not a sofa) is on display in Ennis too; the collection page's own sofa-only exclusion comes from getRangesByTags, not this", () => {
+    const onEnnis = getLiveRanges()
+      .filter((r) => matchesShowroom(r, "ennis"))
+      .map((r) => r.slug)
+      .sort();
+    expect(onEnnis).toEqual(
+      [
+        "axel-by-fama",
+        "carini-sofa-by-xooon",
+        "stax-sofa-by-alexander-and-james",
+        "xtra-life-plus-1600-by-king-koil",
+      ].sort(),
+    );
+  });
+
+  it("real data, scoped to the sofa hub (tagged ranges only): the same three sofa ranges, mattress excluded", () => {
+    const onEnnis = getRangesByTags([])
+      .filter((r) => matchesShowroom(r, "ennis"))
+      .map((r) => r.slug)
+      .sort();
+    expect(onEnnis).toEqual(
+      ["axel-by-fama", "carini-sofa-by-xooon", "stax-sofa-by-alexander-and-james"].sort(),
+    );
+  });
+
+  it("no showroom filter (undefined) always matches, regardless of status", () => {
+    expect(matchesShowroom(page({ showroomStatus: undefined }), undefined)).toBe(true);
+    expect(
+      matchesShowroom(page({ showroomStatus: { castlebar: "not-on-display", ennis: "not-on-display" } }), undefined),
+    ).toBe(true);
+  });
+
+  it("'coming-soon' does not match — this is about what's on the floor now, not what's arriving", () => {
+    expect(matchesShowroom(page({ showroomStatus: { castlebar: "coming-soon", ennis: "on-display" } }), "castlebar")).toBe(false);
+  });
+
+  it("no showroomStatus at all does not match a specific showroom filter — never inferred", () => {
+    expect(matchesShowroom(page({ showroomStatus: undefined }), "ennis")).toBe(false);
   });
 });
 

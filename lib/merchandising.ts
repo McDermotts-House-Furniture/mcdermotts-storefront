@@ -8,6 +8,8 @@
    this palette has no red. */
 
 import { decodeEntities } from "./html";
+import { getLiveRanges } from "./landing-data";
+import { reachableCandidates } from "./variations";
 
 import type { DeliveryTone } from "@/components/commerce/DeliveryNotice";
 import type { StoreApiProduct } from "@/lib/store-api";
@@ -26,7 +28,11 @@ export interface RangeLinkTarget {
 }
 
 const PHONE = { action: "094 90 22500", actionHref: "tel:0949022500" };
-const NON_STOCK = "This is a non-stock order.";
+/** Exported for lib/wc-admin's describeStock — same wording, same concept
+    (an item that was never meant to come off a physical shelf count),
+    just reached from two different signals: a lead-time merchandising tag
+    here, vs. "Manage stock?" being off in WooCommerce there. */
+export const NON_STOCK = "This is a non-stock order.";
 
 interface DeliveryRule extends DeliveryMessage {
   tags: string[];
@@ -183,6 +189,26 @@ export function deliveryNoticesFor(product: StoreApiProduct): DeliveryMessage[] 
   return [{ tone: "stock", title: product.stock_availability.text || "In stock" }];
 }
 
+/* Sofa ranges built as full /range/[slug] pages (lib/landing-data.ts) aren't
+   in RANGE_RULES above — unlike the bedroom/dining ranges there, they don't
+   carry a consistent product tag or category to match on (Declan,
+   2026-08-27: confirmed against the real Store API — Mack's, Stax's and
+   Xavier's own products carry no range-specific tag at all, just generic
+   ones like "all-sofas"). What IS consistent, verified against every live
+   sofa product: the name always starts with the range's own name — "Mack
+   2.5 Seater Sofa", "Colo Corner Sofa", "Xavier Large Sofa". Matched on the
+   range's first word, not its full title — "Carini by XOOON" and "Axel by
+   Fama" carry the brand in the title for display, but the product name
+   itself is just "Carini Corner Chaise Sofa", no "by XOOON" in it. */
+function sofaRangeLinkFor(product: StoreApiProduct): RangeLinkTarget | null {
+  const name = decodeEntities(product.name).toLowerCase();
+  const range = getLiveRanges().find((r) => {
+    const firstWord = r.title.split(" ")[0].toLowerCase();
+    return name === firstWord || name.startsWith(`${firstWord} `);
+  });
+  return range ? { name: range.title, href: `/range/${range.slug}` } : null;
+}
+
 export function rangeLinksFor(product: StoreApiProduct): RangeLinkTarget[] {
   const tagSlugs = new Set((product.tags ?? []).map((t) => t.slug));
   const categorySlugs = new Set(product.categories.map((c) => c.slug));
@@ -194,10 +220,32 @@ export function rangeLinksFor(product: StoreApiProduct): RangeLinkTarget[] {
   ).map(({ name, href }) => ({ name, href }));
   if (matched.length > 0) return matched;
 
+  /* Real /range/ page beats the generic "by X" category fallback below
+     whenever both would otherwise apply (a Carini or Xavier product's own
+     category names do contain " by "). */
+  const sofaRange = sofaRangeLinkFor(product);
+  if (sofaRange) return [sofaRange];
+
   /* Fallback: a category named like a range ("Trenton by XOOON") links out. */
   const rangeCategory = product.categories.find((c) => / by /i.test(decodeEntities(c.name)));
   if (rangeCategory) {
     return [{ name: decodeEntities(rangeCategory.name), href: `/category/${rangeCategory.slug}` }];
   }
   return [];
+}
+
+/* "N colours" (or "N options" for a non-colour first attribute) for a
+   listing card — nothing shown for a simple product, or a variable one
+   with only one real choice. Counts REACHABLE terms (lib/variations.ts —
+   the same count the PDP's own swatch pickers use), not the raw configured
+   term list: a product with "ghost" terms (Mack Chaise had five fabric
+   colours ticked in WP admin with no real variation behind them, found
+   2026-09-01) shouldn't claim more real choices than it actually has. */
+export function optionsNoteFor(product: StoreApiProduct): string | undefined {
+  if (product.type !== "variable" || product.variations.length === 0) return undefined;
+  const first = product.attributes.find((a) => a.has_variations);
+  if (!first) return undefined;
+  const count = reachableCandidates(first, {}, product.variations).size;
+  if (count <= 1) return undefined;
+  return /colour|color/i.test(first.name) ? `${count} colours` : `${count} options`;
 }

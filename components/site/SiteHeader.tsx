@@ -14,7 +14,7 @@ import type { NavItem } from "@/lib/nav";
 export function SiteHeader({ nav }: { nav: NavItem[] }) {
   const { count, hydrated } = useCart();
   return (
-    <header className="sticky top-0 z-20 border-b border-hairline bg-stone">
+    <header className="sticky top-0 z-20 border-b border-hairline bg-surface-page">
       <div className="mx-auto flex max-w-[var(--container-wide)] items-center justify-between gap-8 px-[var(--section-pad-x)] pt-[18px]">
         <Logo href="/" width={230} />
         <div className="flex items-center gap-6">
@@ -75,27 +75,39 @@ export function SiteHeader({ nav }: { nav: NavItem[] }) {
                 </div>
               ) : (
                 item.children.length > 0 && (
+                  /* Same panel chrome as the Sofas & Chairs mega menu — one
+                     column instead of three, since there's no hand-authored
+                     section data for the rest of the nav, but otherwise the
+                     identical white/rounded/shadow-raised card, gold-
+                     underlined title, and small plain-case links (Declan,
+                     2026-09-02: "make the rest of the menu dropdown on
+                     desktop look like the sofas and chairs one"). */
                   <div className="pointer-events-none invisible absolute left-0 top-full z-30 pt-4 opacity-0 transition-[opacity,visibility] duration-[var(--dur-base)] ease-out lg:group-hover:pointer-events-auto lg:group-hover:visible lg:group-hover:opacity-100 lg:group-focus-within:pointer-events-auto lg:group-focus-within:visible lg:group-focus-within:opacity-100">
-                    <ul className="m-0 min-w-56 list-none rounded-md border border-hairline bg-white p-2 shadow-raised">
-                      {item.children.map((child) => (
-                        <li key={child.href}>
+                    <div className="m-0 min-w-56 rounded-md border border-hairline bg-white p-6 shadow-raised">
+                      <p className="m-0 mb-3 inline-block border-b-2 border-gold pb-1 text-[length:var(--fs-small)] font-bold uppercase tracking-[.02em] text-ink">
+                        {item.label}
+                      </p>
+                      <ul className="m-0 list-none p-0">
+                        {item.children.map((child) => (
+                          <li key={child.href}>
+                            <Link
+                              href={child.href}
+                              className="flex min-h-9 items-center whitespace-nowrap text-[length:var(--fs-small)] text-ink no-underline transition-colors duration-[var(--dur-base)] hover:text-gold-deep"
+                            >
+                              {child.label}
+                            </Link>
+                          </li>
+                        ))}
+                        <li className="mt-2 border-t border-hairline pt-2">
                           <Link
-                            href={child.href}
-                            className="flex min-h-[var(--tap-min)] items-center whitespace-nowrap px-4 text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-[.1em] text-ink no-underline transition-colors duration-[var(--dur-base)] hover:text-gold-deep"
+                            href={item.href}
+                            className="flex min-h-9 items-center whitespace-nowrap text-[length:var(--fs-small)] font-bold text-gold-deep no-underline transition-colors duration-[var(--dur-base)] hover:text-ink"
                           >
-                            {child.label}
+                            Browse everything →
                           </Link>
                         </li>
-                      ))}
-                      <li className="mt-1 border-t border-hairline pt-1">
-                        <Link
-                          href={item.href}
-                          className="flex min-h-[var(--tap-min)] items-center whitespace-nowrap px-4 text-[length:var(--fs-eyebrow)] font-bold uppercase tracking-[.1em] text-gold-deep no-underline transition-colors duration-[var(--dur-base)] hover:text-ink"
-                        >
-                          Browse everything →
-                        </Link>
-                      </li>
-                    </ul>
+                      </ul>
+                    </div>
                   </div>
                 )
               )}

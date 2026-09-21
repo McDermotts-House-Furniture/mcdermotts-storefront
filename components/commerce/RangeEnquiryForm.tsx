@@ -151,7 +151,7 @@ export function RangeEnquiryForm({
   if (submitted) {
     return (
       <div
-        className={`rounded-md border border-hairline bg-white p-6 sm:p-8${className ? ` ${className}` : ""}`}
+        className={`rounded-md border border-hairline bg-surface-card p-6 sm:p-8${className ? ` ${className}` : ""}`}
       >
         <p className="m-0 max-w-[var(--measure-body)] text-[length:var(--fs-body)] leading-[var(--lh-body)] text-ink">
           Thanks{name ? `, ${name.split(" ")[0]}` : ""} — that&apos;s gone through to{" "}
@@ -167,7 +167,7 @@ export function RangeEnquiryForm({
   }
 
   return (
-    <div className={`rounded-md border border-hairline bg-white p-6 sm:p-8${className ? ` ${className}` : ""}`}>
+    <div className={`rounded-md border border-hairline bg-surface-card p-6 sm:p-8${className ? ` ${className}` : ""}`}>
       <form onSubmit={submit} noValidate className="grid gap-5 sm:grid-cols-2">
         {/* Honeypot — visually hidden, not display:none (some spam bots skip
             display:none fields), innocuous name a real customer would never

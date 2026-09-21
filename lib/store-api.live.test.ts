@@ -20,6 +20,24 @@ describe.skipIf(process.env.LIVE !== "1")("live Store API", () => {
     expect(p?.name).toBe("Isabelle Dining Armchair");
   });
 
+  /* Declan, 2026-09-01: "how come you have the 2.5 seater and 3 seater mack
+     sofa working with thier variant's colour swatches and everything but
+     other sofas with variants, such as the mack chaise, or all of the orla
+     kiely products" — traced to ?slug= also matching a lone child variation
+     post whose own post_name collides with its parent's. Both of these
+     return two rows live (the real variable product plus an empty, 0-
+     variation "variation" row), with the variation sorting first — so the
+     whole PDP silently rendered as an ordinary, option-less product. */
+  it("resolves the parent product, not a same-slug child variation", async () => {
+    const mackChaise = await getProductBySlug("mack-chaise-sofa");
+    expect(mackChaise?.type).toBe("variable");
+    expect(mackChaise?.variations.length).toBeGreaterThan(0);
+
+    const ivyCornerLhf = await getProductBySlug("ivy-corner-sofa-lhf");
+    expect(ivyCornerLhf?.type).toBe("variable");
+    expect(ivyCornerLhf?.variations.length).toBeGreaterThan(0);
+  });
+
   it("resolves a category by slug", async () => {
     const c = await getCategoryBySlug("dining-room-furniture");
     expect(c?.name).toMatch(/dining/i);
